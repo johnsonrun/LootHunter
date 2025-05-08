@@ -16,8 +16,10 @@ const monsterStore = useMonsterStore()
 
 const resizing = ref(false)
 const showInventory = ref(false)
+const showDefaultKeyImage = ref(false)
 
 onMounted(() => {
+  console.warn('Generated monster image:', monsterStore.currentMonster?.image)
   handleLoad()
   monsterStore.generateMonster()
 })
@@ -48,6 +50,11 @@ watch(pressedMouses, (newValue, oldValue) => {
 watch(pressedKeys, (newValue, oldValue) => {
   if (newValue.length > oldValue.length) {
     monsterStore.decreaseMonsterHp()
+
+    showDefaultKeyImage.value = true
+    setTimeout(() => {
+      showDefaultKeyImage.value = false
+    }, 200)
   }
   handleKeyDown(newValue)
 })
@@ -60,9 +67,11 @@ function handleWindowDrag() {
   appWindow.startDragging()
 }
 
+/*
 function resolveImageURL(key: string) {
   return new URL(`../../assets/images/keys/${key}.png`, import.meta.url).href
 }
+*/
 
 function handleTreasureClick() {
   if (monsterStore.showTreasure) {
@@ -73,6 +82,20 @@ function handleTreasureClick() {
 function toggleInventory() {
   showInventory.value = !showInventory.value
 }
+
+/*
+原本在下方 template 中有這段，用來顯示按下的鍵盤圖片，目前先移除，
+之後再考慮用來決定 不同技能 顯示不同的圖片:
+跟下面的 Function連動: resolveImageURL
+
+<img
+v-for="key in pressedKeys"
+      :key="key"
+      :src="resolveImageURL(key)"
+    >
+    */
+
+// template 砍掉live2D了   <canvas id="live2dCanvas" />
 </script>
 
 <template>
@@ -86,9 +109,32 @@ function toggleInventory() {
 
     <!-- 怪物或寶箱顯示 -->
     <div
-      v-if="monsterStore.currentMonster"
-      class="absolute left-0 top-0 w-full flex flex-col items-center"
+      v-if="monsterStore.currentMonster || monsterStore.showTreasure"
+      class="absolute min-h-screen flex flex-col items-center justify-center overflow-visible"
     >
+      <!-- Default key image -->
+      <img
+        v-if="showDefaultKeyImage"
+        alt="Default Key"
+        class="absolute z-10 h-16 w-16 object-contain"
+        src="/images/default-key.png"
+      >
+
+      <!-- 怪物或寶箱圖片 -->
+      <img
+        v-if="monsterStore.showTreasure"
+        alt="寶箱"
+        class="mb-4 h-auto max-h-[80vh] max-w-[80vw] w-auto object-contain"
+        src="/images/treasure.png"
+        @click="handleTreasureClick"
+      >
+      <img
+        v-else-if="monsterStore.currentMonster"
+        alt="怪物"
+        class="mb-4 h-auto max-h-[80vh] max-w-[80vw] w-auto object-contain"
+        :src="monsterStore.currentMonster.image"
+      >
+
       <!-- 血量條 -->
       <div class="mt-2 h-2.5 max-w-md w-full rounded-full bg-gray-200">
         <div
@@ -104,11 +150,12 @@ function toggleInventory() {
 
       <!-- 血量數值 -->
       <div class="mt-1 text-sm text-white">
-        {{ monsterStore.currentMonster.currentHp }} / {{ monsterStore.currentMonster.maxHp }}
+        {{ monsterStore.currentMonster?.currentHp }} / {{ monsterStore.currentMonster?.maxHp }}
       </div>
 
       <!-- 怪物稀有度 -->
       <div
+        v-if="monsterStore.currentMonster"
         class="mb-2 text-sm text-white"
         :class="{
           'text-gray-200': monsterStore.currentMonster.rarity === 'common',
@@ -124,42 +171,6 @@ function toggleInventory() {
           exalted: '崇高',
         }[monsterStore.currentMonster.rarity] }}
       </div>
-    </div>
-
-    <!-- 怪物或寶箱圖片 -->
-    <div
-      class="absolute left-1/2 top-1/2 transform cursor-pointer -translate-x-1/2 -translate-y-1/2"
-      @click="handleTreasureClick"
-    >
-      <img
-        v-if="monsterStore.showTreasure"
-        alt="寶箱"
-        class="h-32 w-32"
-        src="/images/treasure.png"
-      >
-      <img
-        v-else-if="monsterStore.currentMonster"
-        alt="怪物"
-        class="h-32 w-32"
-        :src="monsterStore.currentMonster.image"
-      >
-    </div>
-
-    <canvas id="live2dCanvas" />
-
-    <img
-      v-for="key in pressedKeys"
-      :key="key"
-      :src="resolveImageURL(key)"
-    >
-
-    <div
-      v-show="resizing"
-      class="flex items-center justify-center bg-black"
-    >
-      <span class="text-center text-5xl text-white">
-        重绘中...
-      </span>
     </div>
 
     <!-- 物品欄按鈕 -->

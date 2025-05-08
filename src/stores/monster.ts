@@ -41,6 +41,10 @@ export const useMonsterStore = defineStore('monster', () => {
 
   // 隨機生成怪物
   function generateMonster() {
+    console.warn('Generating new monster...')
+    // 重置寶箱狀態
+    showTreasure.value = false
+
     // 隨機抽選稀有度
     const rarityRoll = Math.random() * 100
     let rarity: MonsterRarity
@@ -48,16 +52,16 @@ export const useMonsterStore = defineStore('monster', () => {
 
     if (rarityRoll < 60) {
       rarity = 'common'
-      hpRange = [3000, 10000]
+      hpRange = [30, 100]
     } else if (rarityRoll < 90) {
       rarity = 'magic'
-      hpRange = [15000, 30000]
+      hpRange = [150, 300]
     } else if (rarityRoll < 99) {
       rarity = 'rare'
-      hpRange = [35000, 70000]
+      hpRange = [350, 700]
     } else {
       rarity = 'exalted'
-      hpRange = [100000, 150000]
+      hpRange = [1000, 1500]
     }
 
     // 在範圍內隨機生成血量
@@ -74,8 +78,7 @@ export const useMonsterStore = defineStore('monster', () => {
       image,
     }
 
-    // 重置寶箱狀態
-    showTreasure.value = false
+    console.warn('New monster generated:', currentMonster.value)
   }
 
   // 減少怪物血量
@@ -87,13 +90,14 @@ export const useMonsterStore = defineStore('monster', () => {
     // 檢查怪物是否已死亡
     if (currentMonster.value.currentHp === 0) {
       showTreasure.value = true
+      console.warn('Monster defeated, showing treasure...')
     }
   }
 
   // 開啟寶箱，獲得物品
   function openTreasure() {
     if (!showTreasure.value || !currentMonster.value) return
-
+    console.warn('Opening treasure...')
     const rarity = currentMonster.value.rarity
     const roll = Math.random() * 100
     let itemType: ItemType
@@ -119,11 +123,17 @@ export const useMonsterStore = defineStore('monster', () => {
         break
     }
 
-    // 添加物品到物品欄
+    // 添加物品到物品欄    待確認是否有用
     addItemToInventory(itemType)
+
+    // 清除當前怪物
+    currentMonster.value = null
+    showTreasure.value = false
 
     // 生成新怪物
     generateMonster()
+
+    // 手動觸發畫面更新     await nextTick()
   }
 
   // 添加物品到物品欄
