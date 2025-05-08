@@ -4,7 +4,7 @@ import { round } from 'es-toolkit'
 import { computed, watch } from 'vue'
 
 import live2d from '../utils/live2d'
-import { getCursorMonitor } from '../utils/monitor'
+// import { getCursorMonitor } from '../utils/monitor'
 
 import { useTauriListen } from './useTauriListen'
 
@@ -66,7 +66,7 @@ export function useModel() {
     live2d.setParameterValue('CatParamLeftHandDown', hasNonArrowKey)
   }
 
-  async function handleMouseMove() {
+  /* async function handleMouseMove() {
     if (catStore.mode !== 'standard' || !live2d.model) return
 
     const monitor = await getCursorMonitor()
@@ -87,13 +87,17 @@ export function useModel() {
     live2d.setParameterValue('ParamAngleX', x)
     live2d.setParameterValue('ParamAngleY', -y)
   }
+    */
 
-  function handleMouseDown(value: string[]) {
-    const hasLeftDown = value.includes('Left')
+  function handleMouseDown(_value: string[]) { // value 前面加底線 直接不用他
+    // 待補 點滑鼠扣怪物血
+
+    /* const hasLeftDown = value.includes('Left')
     const hasRightDown = value.includes('Right')
 
     live2d.setParameterValue('ParamMouseLeftDown', hasLeftDown)
     live2d.setParameterValue('ParamMouseRightDown', hasRightDown)
+    */
   }
 
   return {
@@ -102,7 +106,7 @@ export function useModel() {
     handleDestroy,
     handleResize,
     handleKeyDown,
-    handleMouseMove,
+    // handleMouseMove,
     handleMouseDown,
   }
 }

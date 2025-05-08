@@ -1,21 +1,23 @@
 import type { Ref } from 'vue'
 
 import { useDebounceFn } from '@vueuse/core'
-import { reactive, ref } from 'vue'
+import { ref } from 'vue' // original: import { reactive, ref } from 'vue'
 
 import { LISTEN_KEY } from '../constants'
 
 import { useTauriListen } from './useTauriListen'
 
 import { useCatStore } from '@/stores/cat'
+import { useMonsterStore } from '@/stores/monster' // 新增這一行
 
 type MouseButtonValue = 'Left' | 'Right' | 'Middle'
 
 interface MouseButtonEvent {
-  kind: 'MousePress' | 'MouseRelease'
+  kind: 'MousePress'
   value: MouseButtonValue
 }
 
+/*
 interface MouseMoveValue {
   x: number
   y: number
@@ -25,13 +27,14 @@ interface MouseMoveEvent {
   kind: 'MouseMove'
   value: MouseMoveValue
 }
+*/
 
 interface KeyboardEvent {
-  kind: 'KeyboardPress' | 'KeyboardRelease'
+  kind: 'KeyboardPress'
   value: string
 }
 
-type DeviceEvent = MouseButtonEvent | MouseMoveEvent | KeyboardEvent
+type DeviceEvent = MouseButtonEvent | KeyboardEvent
 
 function getSupportKeys() {
   const files = import.meta.glob('../assets/images/keys/*.png', { eager: true })
@@ -45,11 +48,12 @@ const supportKeys = getSupportKeys()
 
 export function useDevice() {
   const pressedMouses = ref<MouseButtonValue[]>([])
-  const mousePosition = reactive<MouseMoveValue>({ x: 0, y: 0 })
+  // 取消滑鼠位置監聽功能 const mousePosition = reactive<MouseMoveValue>({ x: 0, y: 0 })
   const pressedKeys = ref<string[]>([])
   const catStore = useCatStore()
+  const monsterStore = useMonsterStore() // 新增這一行
 
-  const debounceCapsLockRelease = useDebounceFn(() => {
+  const debounceCapsLockRelease = useDebounceFn(() => { // 讓CapsLock的釋放延遲100ms 避免誤觸
     handleRelease(pressedKeys, 'CapsLock')
   }, 100)
 
@@ -87,21 +91,26 @@ export function useDevice() {
 
     switch (kind) {
       case 'MousePress':
+        monsterStore.decreaseMonsterHp() // 新增這一行
         return handlePress(pressedMouses, value)
-      case 'MouseRelease':
-        return handleRelease(pressedMouses, value)
-      case 'MouseMove':
-        return Object.assign(mousePosition, value)
+
+        // case 'MouseRelease':
+        //   return handleRelease(pressedMouses, value)
+
+      // case 'MouseMove':
+        // return Object.assign(mousePosition, value)
       case 'KeyboardPress':
+        monsterStore.decreaseMonsterHp() // 新增這一行
         return handlePress(pressedKeys, normalizeKeyValue(value))
-      case 'KeyboardRelease':
-        return handleRelease(pressedKeys, normalizeKeyValue(value))
+
+      //  case 'KeyboardRelease':
+      //    return handleRelease(pressedKeys, normalizeKeyValue(value))
     }
   })
 
   return {
     pressedMouses,
-    mousePosition,
+    // mousePosition,
     pressedKeys,
   }
 }

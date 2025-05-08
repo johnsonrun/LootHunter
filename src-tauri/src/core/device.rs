@@ -38,10 +38,10 @@ pub fn start_listening(app_handle: AppHandle) {
                 kind: DeviceKind::MouseRelease,
                 value: json!(format!("{:?}", button)),
             },
-            EventType::MouseMove { x, y } => DeviceEvent {
+            /*EventType::MouseMove { x, y } => DeviceEvent {
                 kind: DeviceKind::MouseMove,
                 value: json!({ "x": x, "y": y }),
-            },
+            },*/
             EventType::KeyPress(key) => DeviceEvent {
                 kind: DeviceKind::KeyboardPress,
                 value: json!(format!("{:?}", key)),
