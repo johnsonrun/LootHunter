@@ -54,8 +54,8 @@ export const useMonsterStore = defineStore('monster', () => {
     if (!currentMonster.value || isWeaknessActive.value) return
 
     const percentage = hpPercentage.value
-    // 檢查是否在 95%, 90%, ..., 10%, 5% 的位置
-    if (percentage % 5 === 0 && percentage > 0 && percentage < 100) {
+    // 檢查是否在 95%, 90%, ..., 10% 的位置（移除 5%）
+    if (percentage % 5 === 0 && percentage > 5 && percentage < 100) {
       // 20% 機率觸發破綻
       if (Math.random() < 0.2) {
         triggerWeakness()
@@ -66,6 +66,12 @@ export const useMonsterStore = defineStore('monster', () => {
   // 觸發破綻事件
   function triggerWeakness() {
     if (!currentMonster.value) return
+
+    // 先清除舊的計時器
+    if (weaknessTimerInterval.value) {
+      clearInterval(weaknessTimerInterval.value)
+      weaknessTimerInterval.value = null
+    }
 
     // 使用 generateRandomKeys 生成隨機按鍵
     weaknessKeys.value = generateRandomKeys()
@@ -78,11 +84,14 @@ export const useMonsterStore = defineStore('monster', () => {
     keySequence.value = []
 
     // 啟動倒計時
-    const timer = setInterval(() => {
+    weaknessTimerInterval.value = window.setInterval(() => {
       if (weaknessTimer.value > 0) {
         weaknessTimer.value--
       } else {
-        clearInterval(timer)
+        if (weaknessTimerInterval.value) {
+          clearInterval(weaknessTimerInterval.value)
+          weaknessTimerInterval.value = null
+        }
         clearWeakness()
       }
     }, 1000)
@@ -110,6 +119,7 @@ export const useMonsterStore = defineStore('monster', () => {
       計時器: weaknessTimer.value,
     })
   }
+
   // 生成隨機按鍵
   function generateRandomKeys(): string[] {
     const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
@@ -178,8 +188,9 @@ export const useMonsterStore = defineStore('monster', () => {
           lastDefeatedMonsterRarity.value = defeatedRarity
           currentMonster.value = null
           showTreasure.value = true
+          // 清空破綻狀態
+          clearWeakness()
         }
-        // 清空所有狀態
         clearWeakness()
       }
     }
@@ -200,6 +211,8 @@ export const useMonsterStore = defineStore('monster', () => {
       lastDefeatedMonsterRarity.value = defeatedRarity
       currentMonster.value = null
       showTreasure.value = true
+      // 清空破綻狀態
+      clearWeakness()
     }
   }
 
