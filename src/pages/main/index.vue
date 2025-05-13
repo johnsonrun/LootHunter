@@ -52,17 +52,22 @@ watch(pressedMouses, (newValue) => {
   handleMouseDown(newValue)
 })
 
-// 添加防抖的按鍵處理函數
-const handleDebounceKeyPress = useDebounceFn((keys: string[]) => {
+// 監聽鍵盤輸入，減少怪物血量
+const handleDebounceWeaknessKey = useDebounceFn((key: string) => {
+  if (monsterStore.isWeaknessActive && monsterStore.weaknessTimer > 0) {
+    console.warn('處理破綻按鍵:', key)
+    monsterStore.handleKeyPress(key)
+  }
+}, 50) // 50ms 的防抖時間
+
+watch(pressedKeys, (newValue) => {
   try {
-    if (keys.length > 0 && !monsterStore.showTreasure && !isProcessing.value) {
-      // 如果有破綻事件，處理所有按下的按鍵
+    if (newValue.length > 0 && !monsterStore.showTreasure && !isProcessing.value) {
+      // 如果有破綻事件，只處理新按下的按鍵
       if (monsterStore.isWeaknessActive && monsterStore.weaknessTimer > 0) {
-        // 處理所有當前按下的按鍵
-        for (const key of keys) {
-          console.warn('處理破綻按鍵:', key)
-          monsterStore.handleKeyPress(key)
-        }
+        // 只處理最後一個按下的按鍵，並使用防抖
+        const lastKey = newValue[newValue.length - 1]
+        handleDebounceWeaknessKey(lastKey)
       }
 
       // 無論是否有破綻事件，都造成基本傷害
@@ -77,12 +82,7 @@ const handleDebounceKeyPress = useDebounceFn((keys: string[]) => {
     console.error('按鍵處理錯誤:', error)
     showDefaultKeyImage.value = false
   }
-  handleKeyDown(keys)
-}, 50) // 50ms 的防抖時間
-
-// 監聽鍵盤輸入，減少怪物血量
-watch(pressedKeys, (newValue) => {
-  handleDebounceKeyPress(newValue)
+  handleKeyDown(newValue)
 }, { deep: false })
 
 watch(() => catStore.penetrable, (value) => {

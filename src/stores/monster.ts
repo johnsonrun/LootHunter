@@ -67,31 +67,22 @@ export const useMonsterStore = defineStore('monster', () => {
   function triggerWeakness() {
     if (!currentMonster.value) return
 
-    console.warn('開始觸發破綻事件')
-    // 確保先清空所有狀態
-    clearWeakness()
+    // 使用 generateRandomKeys 生成隨機按鍵
+    weaknessKeys.value = generateRandomKeys()
 
-    // 重新設置所有狀態
+    // 啟動破綻狀態
     isWeaknessActive.value = true
-    weaknessKeys.value = generateRandomKeys() // 生成新的隨機按鍵序列
-    keySequence.value = [] // 清空按鍵監聽序列
-    weaknessTimer.value = 5
+    weaknessTimer.value = 5 // 5 秒倒計時
 
-    console.warn('破綻事件狀態:', {
-      是否啟動: isWeaknessActive.value,
-      目標按鍵序列: [...weaknessKeys.value],
-      當前按鍵序列: [...keySequence.value],
-      計時器: weaknessTimer.value,
-    })
+    // 清空之前的按鍵序列，確保從破綻事件開始後才收集新的按鍵
+    keySequence.value = []
 
-    // 設置計時器
-    if (weaknessTimerInterval.value) {
-      clearInterval(weaknessTimerInterval.value)
-    }
-    weaknessTimerInterval.value = window.setInterval(() => {
-      weaknessTimer.value--
-      if (weaknessTimer.value <= 0) {
-        console.warn('破綻事件計時結束')
+    // 啟動倒計時
+    const timer = setInterval(() => {
+      if (weaknessTimer.value > 0) {
+        weaknessTimer.value--
+      } else {
+        clearInterval(timer)
         clearWeakness()
       }
     }, 1000)
@@ -119,7 +110,6 @@ export const useMonsterStore = defineStore('monster', () => {
       計時器: weaknessTimer.value,
     })
   }
-
   // 生成隨機按鍵
   function generateRandomKeys(): string[] {
     const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
@@ -155,21 +145,20 @@ export const useMonsterStore = defineStore('monster', () => {
       計時器: weaknessTimer.value,
     })
 
-    // 更新按鍵序列，保持最新的三個按鍵
-    // 直接添加新按鍵到序列末尾，然後保持最新的三個
-    keySequence.value = [...keySequence.value, inputKey].slice(-3)
+    // 直接操作陣列，保持最新的三個按鍵
+    if (keySequence.value.length >= 3) {
+      keySequence.value.shift() // 移除第一個元素
+    }
+    keySequence.value.push(inputKey) // 添加新按鍵
 
     console.warn('按鍵序列更新:')
-    console.warn('- 前一個序列:', [...keySequence.value])
-    console.warn('- 新按下的按鍵:', inputKey)
     console.warn('- 更新後序列:', [...keySequence.value])
-    console.warn('- 當前序列長度:', keySequence.value.length)
     console.warn('----------------------------------------')
 
     // 只有當收集到三個按鍵時才進行比對
     if (keySequence.value.length === 3) {
       // 檢查按鍵順序是否完全匹配
-      const isMatch = keySequence.value.every((key, index) => key === weaknessKeys.value[index])
+      const isMatch = keySequence.value.every((key: string, index: number) => key === weaknessKeys.value[index])
       console.warn('按鍵比對結果:')
       console.warn('- 實際按下的按鍵:', [...keySequence.value])
       console.warn('- 目標按鍵序列:', [...weaknessKeys.value])

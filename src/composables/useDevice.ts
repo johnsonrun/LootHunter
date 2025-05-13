@@ -55,15 +55,16 @@ export function useDevice() {
     handleRelease(pressedKeys, 'CapsLock')
   }, 100)
 
+  const KEY_PRESS_INTERVAL = 50 // 按鍵觸發的最小間隔（毫秒）
+
   const handlePress = <T>(array: Ref<T[]>, value?: T) => {
     if (!value) return
-    // 直接添加按鍵，不使用 Set 去重    原版是這樣 array.value = [...new Set([...array.value, value])]
+    // 直接添加按鍵，不使用 Set 去重
     array.value = [...array.value, value]
   }
 
   const handleRelease = <T>(array: Ref<T[]>, value?: T) => {
     if (!value) return
-
     array.value = array.value.filter(item => item !== value)
   }
 
@@ -78,6 +79,14 @@ export function useDevice() {
     return key
   }
 
+  // 添加防抖的按鍵處理函數
+  const debouncedKeyPress = useDebounceFn((value: string) => {
+    const normalizedKey = normalizeKeyValue(value)
+    if (normalizedKey) {
+      handlePress(pressedKeys, normalizedKey)
+    }
+  }, KEY_PRESS_INTERVAL)
+
   useTauriListen<DeviceEvent>(LISTEN_KEY.DEVICE_CHANGED, ({ payload }) => {
     const { kind, value } = payload
 
@@ -91,7 +100,7 @@ export function useDevice() {
         return handlePress(pressedMouses, value)
 
       case 'KeyboardPress':
-        return handlePress(pressedKeys, normalizeKeyValue(value))
+        return debouncedKeyPress(value)
     }
   })
 
