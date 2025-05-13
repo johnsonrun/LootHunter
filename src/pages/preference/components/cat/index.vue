@@ -11,31 +11,31 @@ const catStore = useCatStore()
 
 const modeList: SelectProps['options'] = [
   {
-    label: '标准模式',
+    label: '標準模式',
     value: 'standard',
   },
   {
-    label: '键盘模式',
+    label: '鍵盤模式',
     value: 'keyboard',
   },
 ]
 </script>
 
 <template>
-  <ProList title="模式设置">
-    <ProListItem title="选择模式">
+  <ProList title="模式設定">
+    <ProListItem title="選擇模式">
       <Select
         v-model:value="catStore.mode"
         :options="modeList"
-        title="选择模式"
+        title="選擇模式"
       />
     </ProListItem>
   </ProList>
 
-  <ProList title="窗口设置">
+  <ProList title="視窗設定">
     <ProListItem
-      description="启用后，窗口不影响对其他应用程序的操作"
-      title="窗口穿透"
+      description="啟用後，視窗不影響對其他應用程式的操作"
+      title="視窗穿透"
     >
       <Switch v-model:checked="catStore.penetrable" />
     </ProListItem>
@@ -50,7 +50,7 @@ const modeList: SelectProps['options'] = [
       />
     </ProListItem>
 
-    <ProListItem title="镜像模式">
+    <ProListItem title="鏡像模式">
       <Switch v-model:checked="catStore.mirrorMode" />
     </ProListItem>
   </ProList>

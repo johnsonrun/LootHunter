@@ -2,6 +2,6 @@
 
 <template>
   <div>
-    敬请期待
+    敬請期待
   </div>
 </template>

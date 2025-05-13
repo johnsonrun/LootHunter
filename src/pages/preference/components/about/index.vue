@@ -20,7 +20,7 @@ function feedbackIssue() {
 </script>
 
 <template>
-  <ProList title="关于软件">
+  <ProList title="關於">
     <ProListItem
       :description="`版本：v${appStore.version}`"
       :title="appStore.name"
@@ -29,7 +29,7 @@ function feedbackIssue() {
         type="primary"
         @click="handleUpdate"
       >
-        检查更新
+        檢查更新
       </Button>
 
       <template #icon>
@@ -42,12 +42,12 @@ function feedbackIssue() {
       </template>
     </ProListItem>
 
-    <ProListItem title="开源地址">
+    <ProListItem title="開源地址">
       <Button
         danger
         @click="feedbackIssue"
       >
-        反馈问题
+        反饋問題
       </Button>
 
       <template #description>

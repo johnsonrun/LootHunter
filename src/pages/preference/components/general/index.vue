@@ -23,14 +23,14 @@ watch(() => generalStore.autostart, async (value) => {
 </script>
 
 <template>
-  <ProList title="应用设置">
-    <ProListItem title="开机自启动">
+  <ProList title="應用設定">
+    <ProListItem title="開機自動啟動">
       <Switch v-model:checked="generalStore.autostart" />
     </ProListItem>
   </ProList>
 
-  <ProList title="更新设置">
-    <ProListItem title="自动检查更新">
+  <ProList title="更新設定">
+    <ProListItem title="自動檢查更新">
       <Switch v-model:checked="generalStore.autoCheckUpdate" />
     </ProListItem>
   </ProList>

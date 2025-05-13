@@ -22,12 +22,12 @@ onMounted(async () => {
 
 const menus = [
   {
-    label: '猫咪设置',
+    label: '介面設定',
     icon: 'i-solar:cat-bold',
     component: Cat,
   },
   {
-    label: '通用设置',
+    label: '通用設定',
     icon: 'i-solar:settings-minimalistic-bold',
     component: General,
   },
@@ -37,7 +37,7 @@ const menus = [
     component: Model,
   },
   {
-    label: '关于',
+    label: '關於',
     icon: 'i-solar:info-circle-bold',
     component: About,
   },

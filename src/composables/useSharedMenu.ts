@@ -45,7 +45,7 @@ export function useSharedMenu() {
   const getSharedMenu = async () => {
     return await Promise.all([
       MenuItem.new({
-        text: '偏好设置...',
+        text: '偏好設定...',
         accelerator: isMac ? 'Cmd+,' : '',
         action: () => showWindow('preference'),
       }),
@@ -77,7 +77,7 @@ export function useSharedMenu() {
         ),
       }), */
       CheckMenuItem.new({
-        text: '窗口穿透',
+        text: '視窗穿透',
         checked: catStore.penetrable,
         action: () => {
           catStore.penetrable = !catStore.penetrable
@@ -88,7 +88,7 @@ export function useSharedMenu() {
         items: await getOpacityMenuItems(),
       }),
       CheckMenuItem.new({
-        text: '镜像模式',
+        text: '鏡像模式',
         checked: catStore.mirrorMode,
         action: () => {
           catStore.mirrorMode = !catStore.mirrorMode
