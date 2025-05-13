@@ -1,5 +1,5 @@
 {
-  "identifier": "com.ayangweb.BongoCat",
+  "identifier": "com.johnsonrun.LootHunter",
   "bundle": {
     "resources": ["assets/tray.png", "assets/logo.png"]
   }

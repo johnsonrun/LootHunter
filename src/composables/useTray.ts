@@ -18,7 +18,7 @@ import { useSharedMenu } from './useSharedMenu'
 
 import { useCatStore } from '@/stores/cat'
 
-const TRAY_ID = 'BONGO_CAT_TRAY'
+const TRAY_ID = 'LOOT_HUNTER_TRAY'
 
 export function useTray() {
   const catStore = useCatStore()

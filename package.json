@@ -1,11 +1,11 @@
 {
-  "name": "bongo-cat",
+  "name": "loot-hunter",
   "type": "module",
-  "version": "0.3.0",
+  "version": "0.0.1",
   "private": true,
   "author": {
-    "name": "ayangweb",
-    "email": "ayangweb@foxmail.com"
+    "name": "johnsonrun",
+    "email": "foreversx11@gmail.com"
   },
   "scripts": {
     "dev": "run-s build:icon dev:vite",
