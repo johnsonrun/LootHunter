@@ -172,67 +172,80 @@ function closePanel() {
       v-if="monsterStore.currentMonster || monsterStore.showTreasure"
       class="absolute min-h-screen flex flex-col items-center justify-center overflow-visible"
     >
-      <!-- Default key image -->
-      <img
-        v-if="showDefaultKeyImage"
-        alt="Default Key"
-        class="absolute z-10 h-16 w-16 object-contain"
-        src="/images/default-key.png"
-      >
-
-      <!-- 怪物或寶箱圖片 -->
-      <img
-        v-if="monsterStore.showTreasure"
-        alt="寶箱"
-        class="mb-4 h-auto max-h-[80vh] max-w-[80vw] w-auto cursor-pointer object-contain"
-        src="/images/treasure.png"
-        :style="{ pointerEvents: 'auto' }"
-        @mousedown.stop.prevent="handleTreasureClick"
-      >
-      <img
-        v-else-if="monsterStore.currentMonster"
-        alt="怪物"
-        class="mb-4 h-auto max-h-[80vh] max-w-[80vw] w-auto object-contain"
-        :src="monsterStore.currentMonster.image"
-      >
-
-      <!-- 破綻提示 -->
-      <div
-        v-if="monsterStore.isWeaknessActive"
-        class="mb-4 text-center text-white"
-      >
-        <div class="text-xl font-bold">
-          發現破綻! {{ monsterStore.weaknessTimer }} 秒內發動會心一擊
+      <!-- 怪物或寶箱圖片和血量條容器 -->
+      <div class="flex flex-col items-center">
+        <!-- 怪物或寶箱圖片 -->
+        <div class="relative">
+          <img
+            v-if="monsterStore.showTreasure"
+            alt="寶箱"
+            class="h-auto max-h-[80vh] max-w-[80vw] w-auto cursor-pointer object-contain"
+            src="/images/treasure.png"
+            :style="{ pointerEvents: 'auto' }"
+            @mousedown.stop.prevent="handleTreasureClick"
+          >
+          <img
+            v-else-if="monsterStore.currentMonster"
+            alt="怪物"
+            class="h-auto max-h-[80vh] max-w-[80vw] w-auto object-contain"
+            :src="monsterStore.currentMonster.image"
+          >
+          <!-- Default key image -->
+          <img
+            v-if="showDefaultKeyImage"
+            alt="Default Key"
+            class="absolute z-10 h-16 w-16 object-contain"
+            src="/images/default-key.png"
+            :style="{
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }"
+          >
         </div>
-        <div class="mt-2 text-lg">
-          輸入: {{ monsterStore.weaknessKeys.join(' > ') }}
+
+        <!-- 血量條和數值 -->
+        <div class="relative w-[400px]">
+          <div class="h-4 w-full rounded-full bg-gray-200">
+            <div
+              class="h-4 rounded-full"
+              :class="{
+                'bg-green-500': monsterStore.hpPercentage > 50,
+                'bg-yellow-500': monsterStore.hpPercentage <= 50 && monsterStore.hpPercentage > 20,
+                'bg-red-500': monsterStore.hpPercentage <= 20,
+              }"
+              :style="{ width: `${monsterStore.hpPercentage}%` }"
+            />
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-sm text-black font-medium">
+              {{ monsterStore.currentMonster?.currentHp }} / {{ monsterStore.currentMonster?.maxHp }}
+            </span>
+          </div>
         </div>
-      </div>
-
-      <!-- 血量條 -->
-      <div class="mt-2 h-2.5 max-w-md w-full rounded-full bg-gray-200">
-        <div
-          class="h-2.5 rounded-full"
-          :class="{
-            'bg-green-500': monsterStore.hpPercentage > 50,
-            'bg-yellow-500': monsterStore.hpPercentage <= 50 && monsterStore.hpPercentage > 20,
-            'bg-red-500': monsterStore.hpPercentage <= 20,
-          }"
-          :style="{ width: `${monsterStore.hpPercentage}%` }"
-        />
-      </div>
-
-      <!-- 血量數值 -->
-      <div class="mt-1 text-sm text-white">
-        {{ monsterStore.currentMonster?.currentHp }} / {{ monsterStore.currentMonster?.maxHp }}
       </div>
 
       <!-- 怪物稀有度 -->
       <div
         v-if="monsterStore.currentMonster"
-        class="mb-2 flex items-center gap-4 text-sm text-white"
+        class="mt-2 w-[400px] text-sm"
+        :class="{
+          'text-gray-200': monsterStore.currentMonster.rarity === 'common',
+          'text-blue-400': monsterStore.currentMonster.rarity === 'magic',
+          'text-purple-400': monsterStore.currentMonster.rarity === 'rare',
+          'text-yellow-400': monsterStore.currentMonster.rarity === 'exalted',
+        }"
       >
-        <!-- 選單按鈕 -->
+        {{ {
+          common: '普通',
+          magic: '魔法',
+          rare: '稀有',
+          exalted: '崇高',
+        }[monsterStore.currentMonster.rarity] }}
+      </div>
+
+      <!-- 選單按鈕 -->
+      <div class="mt-2 w-[400px] flex justify-end">
         <div class="relative">
           <button
             class="rounded-md bg-gray-800 px-3 py-1 text-white shadow-lg hover:bg-gray-700"
@@ -244,7 +257,7 @@ function closePanel() {
           <!-- 選單面板 -->
           <div
             v-if="showMenu"
-            class="absolute left-0 top-full mt-2 w-48 rounded-md bg-gray-800 bg-opacity-90 p-2 shadow-lg"
+            class="absolute right-0 top-full mt-2 w-48 rounded-md bg-gray-800 bg-opacity-90 p-2 shadow-lg"
             @mousedown.stop.prevent
           >
             <button
@@ -261,52 +274,49 @@ function closePanel() {
             </button>
           </div>
         </div>
+      </div>
 
-        <div
-          :class="{
-            'text-gray-200': monsterStore.currentMonster.rarity === 'common',
-            'text-blue-400': monsterStore.currentMonster.rarity === 'magic',
-            'text-purple-400': monsterStore.currentMonster.rarity === 'rare',
-            'text-yellow-400': monsterStore.currentMonster.rarity === 'exalted',
-          }"
-        >
-          {{ {
-            common: '普通',
-            magic: '魔法',
-            rare: '稀有',
-            exalted: '崇高',
-          }[monsterStore.currentMonster.rarity] }}
-        </div>
+      <!-- 破綻提示 -->
+      <div
+        v-if="monsterStore.isWeaknessActive"
+        class="mt-2 w-[400px] text-sm text-white"
+      >
+        {{ monsterStore.weaknessTimer }} 秒內輸入: {{ monsterStore.weaknessKeys.join(' > ') }}
       </div>
     </div>
 
-    <!-- 選單按鈕 -->
-    <div class="fixed bottom-4 right-4 z-[9999]">
-      <button
-        class="rounded-md bg-gray-800 px-4 py-2 text-white shadow-lg hover:bg-gray-700"
-        @mousedown.stop.prevent="toggleMenu"
-      >
-        選單列表
-      </button>
+    <!-- 寶箱事件時的選單按鈕 -->
+    <div
+      v-if="monsterStore.showTreasure"
+      class="fixed bottom-4 right-4 z-[9999]"
+    >
+      <div class="relative">
+        <button
+          class="rounded-md bg-gray-800 px-3 py-1 text-white shadow-lg hover:bg-gray-700"
+          @mousedown.stop.prevent="toggleMenu"
+        >
+          選單列表
+        </button>
 
-      <!-- 選單面板 -->
-      <div
-        v-if="showMenu"
-        class="absolute bottom-full right-0 mb-2 w-48 rounded-md bg-gray-800 bg-opacity-90 p-2 shadow-lg"
-        @mousedown.stop.prevent
-      >
-        <button
-          class="mb-1 w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
-          @mousedown.stop.prevent="openInventory"
+        <!-- 選單面板 -->
+        <div
+          v-if="showMenu"
+          class="absolute right-0 top-full mt-2 w-48 rounded-md bg-gray-800 bg-opacity-90 p-2 shadow-lg"
+          @mousedown.stop.prevent
         >
-          物品欄
-        </button>
-        <button
-          class="w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
-          @mousedown.stop.prevent="openEquipment"
-        >
-          裝備欄
-        </button>
+          <button
+            class="mb-1 w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
+            @mousedown.stop.prevent="openInventory"
+          >
+            物品欄
+          </button>
+          <button
+            class="w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
+            @mousedown.stop.prevent="openEquipment"
+          >
+            裝備欄
+          </button>
+        </div>
       </div>
     </div>
 
