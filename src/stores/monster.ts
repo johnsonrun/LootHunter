@@ -33,11 +33,218 @@ export const useMonsterStore = defineStore('monster', () => {
   // 物品欄
   const inventory = ref<Item[]>([])
 
+  // 最近擊敗的怪物稀有度
+  const lastDefeatedMonsterRarity = ref<MonsterRarity>('common')
+
+  // 破綻機制相關狀態
+  const isWeaknessActive = ref(false)
+  const weaknessKeys = ref<string[]>([]) // 隨機生成的三個按鍵
+  const weaknessTimer = ref(5)
+  const weaknessTimerInterval = ref<number | null>(null)
+  const keySequence = ref<string[]>([]) // 監聽最近按下的三個按鍵
+
   // 計算當前怪物血量百分比
   const hpPercentage = computed(() => {
     if (!currentMonster.value) return 0
-    return (currentMonster.value.currentHp / currentMonster.value.maxHp) * 100
+    return Math.floor((currentMonster.value.currentHp / currentMonster.value.maxHp) * 100)
   })
+
+  // 檢查是否觸發破綻
+  function checkWeakness() {
+    if (!currentMonster.value || isWeaknessActive.value) return
+
+    const percentage = hpPercentage.value
+    // 檢查是否在 95%, 90%, ..., 10%, 5% 的位置
+    if (percentage % 5 === 0 && percentage > 0 && percentage < 100) {
+      // 20% 機率觸發破綻
+      if (Math.random() < 0.2) {
+        triggerWeakness()
+      }
+    }
+  }
+
+  // 觸發破綻事件
+  function triggerWeakness() {
+    if (!currentMonster.value) return
+
+    console.warn('開始觸發破綻事件')
+    // 確保先清空所有狀態
+    clearWeakness()
+
+    // 重新設置所有狀態
+    isWeaknessActive.value = true
+    weaknessKeys.value = generateRandomKeys() // 生成新的隨機按鍵序列
+    keySequence.value = [] // 清空按鍵監聽序列
+    weaknessTimer.value = 5
+
+    console.warn('破綻事件狀態:', {
+      是否啟動: isWeaknessActive.value,
+      目標按鍵序列: [...weaknessKeys.value],
+      當前按鍵序列: [...keySequence.value],
+      計時器: weaknessTimer.value,
+    })
+
+    // 設置計時器
+    if (weaknessTimerInterval.value) {
+      clearInterval(weaknessTimerInterval.value)
+    }
+    weaknessTimerInterval.value = window.setInterval(() => {
+      weaknessTimer.value--
+      if (weaknessTimer.value <= 0) {
+        console.warn('破綻事件計時結束')
+        clearWeakness()
+      }
+    }, 1000)
+  }
+
+  // 清除破綻狀態
+  function clearWeakness() {
+    console.warn('清除破綻狀態')
+    // 清空所有狀態
+    isWeaknessActive.value = false
+    weaknessKeys.value = [] // 清空隨機生成的按鍵序列
+    keySequence.value = [] // 清空按鍵監聽序列
+    weaknessTimer.value = 5 // 重置計時器
+
+    // 清除計時器
+    if (weaknessTimerInterval.value) {
+      clearInterval(weaknessTimerInterval.value)
+      weaknessTimerInterval.value = null
+    }
+
+    console.warn('破綻狀態已清除:', {
+      是否啟動: isWeaknessActive.value,
+      目標按鍵序列: [...weaknessKeys.value],
+      當前按鍵序列: [...keySequence.value],
+      計時器: weaknessTimer.value,
+    })
+  }
+
+  // 生成隨機按鍵
+  function generateRandomKeys(): string[] {
+    const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
+    const result: string[] = []
+    const availableKeys = [...keys]
+
+    for (let i = 0; i < 3; i++) {
+      const randomIndex = Math.floor(Math.random() * availableKeys.length)
+      result.push(availableKeys[randomIndex])
+      availableKeys.splice(randomIndex, 1)
+    }
+
+    console.warn('生成的按鍵序列:', result)
+    return result
+  }
+
+  // 處理按鍵輸入
+  function handleKeyPress(key: string) {
+    if (!isWeaknessActive.value || !currentMonster.value) {
+      console.warn('破綻事件未啟動或怪物不存在，忽略按鍵輸入')
+      keySequence.value = [] // 清空按鍵序列
+      return
+    }
+
+    // 將 'KeyX' 格式轉換為單個字母
+    const inputKey = key.replace('Key', '').toLowerCase()
+    console.warn('----------------------------------------')
+    console.warn('按下按鍵:', inputKey)
+    console.warn('當前破綻狀態:', {
+      是否啟動: isWeaknessActive.value,
+      目標按鍵序列: [...weaknessKeys.value],
+      當前按鍵序列: [...keySequence.value],
+      計時器: weaknessTimer.value,
+    })
+
+    // 更新按鍵序列，保持最新的三個按鍵
+    // 直接添加新按鍵到序列末尾，然後保持最新的三個
+    keySequence.value = [...keySequence.value, inputKey].slice(-3)
+
+    console.warn('按鍵序列更新:')
+    console.warn('- 前一個序列:', [...keySequence.value])
+    console.warn('- 新按下的按鍵:', inputKey)
+    console.warn('- 更新後序列:', [...keySequence.value])
+    console.warn('- 當前序列長度:', keySequence.value.length)
+    console.warn('----------------------------------------')
+
+    // 只有當收集到三個按鍵時才進行比對
+    if (keySequence.value.length === 3) {
+      // 檢查按鍵順序是否完全匹配
+      const isMatch = keySequence.value.every((key, index) => key === weaknessKeys.value[index])
+      console.warn('按鍵比對結果:')
+      console.warn('- 實際按下的按鍵:', [...keySequence.value])
+      console.warn('- 目標按鍵序列:', [...weaknessKeys.value])
+      console.warn('- 是否匹配:', isMatch)
+      console.warn('----------------------------------------')
+
+      if (isMatch) {
+        console.warn('成功完成按鍵序列！觸發會心一擊！')
+        // 造成 5% 總生命的傷害
+        const damage = Math.floor(currentMonster.value.maxHp * 0.05)
+        console.warn('造成傷害:', damage, '當前血量:', currentMonster.value.currentHp)
+        currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - damage)
+
+        // 如果血量歸零，觸發怪物死亡
+        if (currentMonster.value.currentHp === 0) {
+          const defeatedRarity = currentMonster.value.rarity
+          lastDefeatedMonsterRarity.value = defeatedRarity
+          currentMonster.value = null
+          showTreasure.value = true
+        }
+        // 清空所有狀態
+        clearWeakness()
+      }
+    }
+  }
+
+  // 減少怪物血量
+  function decreaseMonsterHp() {
+    if (!currentMonster.value || showTreasure.value) return
+
+    currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - 1)
+
+    // 檢查是否觸發破綻
+    checkWeakness()
+
+    // 檢查怪物是否已死亡
+    if (currentMonster.value.currentHp === 0) {
+      const defeatedRarity = currentMonster.value.rarity
+      lastDefeatedMonsterRarity.value = defeatedRarity
+      currentMonster.value = null
+      showTreasure.value = true
+    }
+  }
+
+  // 添加物品到物品欄
+  function addItemToInventory(type: ItemType) {
+    const itemNames = {
+      common: '普通材料',
+      magic: '魔法材料',
+      rare: '稀有材料',
+      exalted: '崇高材料',
+    }
+
+    // 檢查是否已存在相同類型的物品
+    const existingItem = inventory.value.find(item => item.type === type)
+
+    if (existingItem) {
+      // 如果已存在，增加數量
+      existingItem.quantity += 1
+      console.warn('增加物品數量:', type, '當前數量:', existingItem.quantity)
+    } else {
+      // 如果不存在，創建新物品
+      const newItem = {
+        id: `${type}-${Date.now()}`,
+        type,
+        name: itemNames[type],
+        quantity: 1,
+      }
+      inventory.value.push(newItem)
+      console.warn('新增物品:', newItem)
+    }
+
+    // 輸出當前物品欄狀態
+    console.warn('當前物品欄:', inventory.value)
+  }
 
   // 隨機生成怪物
   function generateMonster() {
@@ -81,26 +288,32 @@ export const useMonsterStore = defineStore('monster', () => {
     console.warn('New monster generated:', currentMonster.value)
   }
 
-  // 減少怪物血量
-  function decreaseMonsterHp() {
-    if (!currentMonster.value || showTreasure.value) return
-
-    currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - 1)
-
-    // 檢查怪物是否已死亡
-    if (currentMonster.value.currentHp === 0) {
-      showTreasure.value = true
-      console.warn('Monster defeated, showing treasure...')
-    }
-  }
-
   // 開啟寶箱，獲得物品
-  function openTreasure() {
-    if (!showTreasure.value || !currentMonster.value) return
+  async function openTreasure() {
+    if (!showTreasure.value) {
+      console.warn('寶箱未顯示，無法開啟')
+      return
+    }
     console.warn('Opening treasure...')
-    const rarity = currentMonster.value.rarity
-    const roll = Math.random() * 100
+    console.warn('lastDefeatedMonsterRarity 初始值:', lastDefeatedMonsterRarity.value)
+
+    // 檢查 lastDefeatedMonsterRarity 的狀態
+    if (typeof lastDefeatedMonsterRarity.value === 'undefined') {
+      console.error('lastDefeatedMonsterRarity 未定義')
+      return
+    }
+
+    // 使用最近擊敗的怪物稀有度
+    const rarity = lastDefeatedMonsterRarity.value
+    console.warn('成功獲取 rarity:', rarity)
+
+    if (!rarity) {
+      console.error('rarity 為空值')
+      return
+    }
+
     let itemType: ItemType
+    console.warn('準備決定物品類型，當前 rarity:', rarity)
 
     // 根據怪物稀有度決定掉落物品
     switch (rarity) {
@@ -108,55 +321,30 @@ export const useMonsterStore = defineStore('monster', () => {
         itemType = 'common'
         break
       case 'magic':
-        itemType = roll < 80 ? 'common' : 'magic'
+        itemType = 'magic'
         break
       case 'rare':
-        if (roll < 60) itemType = 'common'
-        else if (roll < 90) itemType = 'magic'
-        else itemType = 'rare'
+        itemType = 'rare'
         break
       case 'exalted':
-        if (roll < 40) itemType = 'common'
-        else if (roll < 80) itemType = 'magic'
-        else if (roll < 95) itemType = 'rare'
-        else itemType = 'exalted'
+        itemType = 'exalted'
         break
+      default:
+        console.error('未知的怪物稀有度:', rarity)
+        return
     }
 
-    // 添加物品到物品欄    待確認是否有用
+    console.warn('掉落物品類型:', itemType)
+
+    // 添加物品到物品欄
     addItemToInventory(itemType)
 
-    // 清除當前怪物
-    currentMonster.value = null
+    // 清除寶箱狀態
     showTreasure.value = false
 
     // 生成新怪物
+    await new Promise(resolve => setTimeout(resolve, 100))
     generateMonster()
-
-    // 手動觸發畫面更新     await nextTick()
-  }
-
-  // 添加物品到物品欄
-  function addItemToInventory(type: ItemType) {
-    const itemNames = {
-      common: '普通材料',
-      magic: '魔法材料',
-      rare: '稀有材料',
-      exalted: '崇高材料',
-    }
-
-    const existingItem = inventory.value.find(item => item.type === type)
-
-    if (existingItem) {
-      existingItem.quantity += 1
-    } else {
-      inventory.value.push({
-        id: `${type}-${Date.now()}`,
-        type,
-        name: itemNames[type],
-        quantity: 1,
-      })
-    }
   }
 
   return {
@@ -164,8 +352,13 @@ export const useMonsterStore = defineStore('monster', () => {
     showTreasure,
     inventory,
     hpPercentage,
+    lastDefeatedMonsterRarity,
+    isWeaknessActive,
+    weaknessKeys,
+    weaknessTimer,
     generateMonster,
     decreaseMonsterHp,
     openTreasure,
+    handleKeyPress,
   }
 })

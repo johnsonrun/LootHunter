@@ -10,7 +10,7 @@ static IS_RUNNING: AtomicBool = AtomicBool::new(false);
 pub enum DeviceKind {
     MousePress,
     MouseRelease,
-    MouseMove,
+    //MouseMove,
     KeyboardPress,
     KeyboardRelease,
 }

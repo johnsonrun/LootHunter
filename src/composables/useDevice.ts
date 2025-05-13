@@ -8,7 +8,6 @@ import { LISTEN_KEY } from '../constants'
 import { useTauriListen } from './useTauriListen'
 
 import { useCatStore } from '@/stores/cat'
-import { useMonsterStore } from '@/stores/monster' // 新增這一行
 
 type MouseButtonValue = 'Left' | 'Right' | 'Middle'
 
@@ -51,7 +50,6 @@ export function useDevice() {
   // 取消滑鼠位置監聽功能 const mousePosition = reactive<MouseMoveValue>({ x: 0, y: 0 })
   const pressedKeys = ref<string[]>([])
   const catStore = useCatStore()
-  const monsterStore = useMonsterStore() // 新增這一行
 
   const debounceCapsLockRelease = useDebounceFn(() => { // 讓CapsLock的釋放延遲100ms 避免誤觸
     handleRelease(pressedKeys, 'CapsLock')
@@ -59,8 +57,8 @@ export function useDevice() {
 
   const handlePress = <T>(array: Ref<T[]>, value?: T) => {
     if (!value) return
-
-    array.value = [...new Set([...array.value, value])]
+    // 直接添加按鍵，不使用 Set 去重    原版是這樣 array.value = [...new Set([...array.value, value])]
+    array.value = [...array.value, value]
   }
 
   const handleRelease = <T>(array: Ref<T[]>, value?: T) => {
@@ -85,26 +83,15 @@ export function useDevice() {
 
     if (value === 'CapsLock') {
       handlePress(pressedKeys, 'CapsLock')
-
       return debounceCapsLockRelease()
     }
 
     switch (kind) {
       case 'MousePress':
-        monsterStore.decreaseMonsterHp() // 新增這一行
         return handlePress(pressedMouses, value)
 
-        // case 'MouseRelease':
-        //   return handleRelease(pressedMouses, value)
-
-      // case 'MouseMove':
-        // return Object.assign(mousePosition, value)
       case 'KeyboardPress':
-        monsterStore.decreaseMonsterHp() // 新增這一行
         return handlePress(pressedKeys, normalizeKeyValue(value))
-
-      //  case 'KeyboardRelease':
-      //    return handleRelease(pressedKeys, normalizeKeyValue(value))
     }
   })
 

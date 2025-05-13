@@ -1,6 +1,3 @@
-import { LogicalSize } from '@tauri-apps/api/dpi'
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { round } from 'es-toolkit'
 import { computed, watch } from 'vue'
 
 import live2d from '../utils/live2d'
@@ -17,7 +14,11 @@ export function useModel() {
   const catStore = useCatStore()
   const modelStore = useModelStore()
 
-  watch(() => catStore.mode, handleLoad)
+  // 監聽模式變化並重新載入模型
+  watch(() => catStore.mode, async (newMode) => {
+    console.warn('模式變更，重新載入模型:', newMode)
+    await handleLoad()
+  }, { immediate: true })
 
   const backgroundImagePath = computed(() => {
     return `/images/backgrounds/${catStore.mode}.png`
@@ -28,42 +29,55 @@ export function useModel() {
   })
 
   async function handleLoad() {
-    const data = await live2d.load(`/models/${catStore.mode}/cat.model3.json`)
+    try {
+      console.warn('開始載入 Live2D 模型...')
+      const data = await live2d.load(`/models/${catStore.mode}/cat.model3.json`)
+      console.warn('Live2D 模型載入完成')
 
-    handleResize()
-
-    Object.assign(modelStore, data)
+      await handleResize()
+      Object.assign(modelStore, data)
+    } catch (error) {
+      console.error('載入 Live2D 模型時發生錯誤:', error)
+    }
   }
 
   function handleDestroy() {
+    console.warn('銷毀 Live2D 模型')
     live2d.destroy()
   }
 
   async function handleResize() {
-    if (!live2d.model) return
+    if (!live2d.model) {
+      console.warn('Live2D 模型不存在，無法調整大小')
+      return
+    }
 
-    const appWindow = getCurrentWebviewWindow()
-    const { innerWidth, innerHeight } = window
-    const { width, height } = await getImageSize(backgroundImagePath.value)
-
-    live2d.model?.scale.set(innerWidth / width)
-
-    if (round(innerWidth / innerHeight, 1) === round(width / height, 1)) return
-
-    return appWindow.setSize(
-      new LogicalSize({
-        width: innerWidth,
-        height: Math.ceil(innerWidth * (height / width)),
-      }),
-    )
+    try {
+      const { innerWidth } = window
+      const { width } = await getImageSize(backgroundImagePath.value)
+      live2d.model.scale.set(innerWidth / width)
+      console.warn('Live2D 模型大小調整完成')
+    } catch (error) {
+      console.error('調整 Live2D 模型大小時發生錯誤:', error)
+    }
   }
 
   function handleKeyDown(value: string[]) {
-    const hasArrowKey = value.some(key => key.endsWith('Arrow'))
-    const hasNonArrowKey = value.some(key => !key.endsWith('Arrow'))
+    try {
+      if (!live2d.model?.internalModel?.coreModel) {
+        console.warn('Live2D 模型未正確初始化，嘗試重新載入...')
+        handleLoad()
+        return
+      }
 
-    live2d.setParameterValue('CatParamRightHandDown', hasArrowKey)
-    live2d.setParameterValue('CatParamLeftHandDown', hasNonArrowKey)
+      const hasArrowKey = value.some(key => key.endsWith('Arrow'))
+      const hasNonArrowKey = value.some(key => !key.endsWith('Arrow'))
+
+      live2d.setParameterValue('CatParamRightHandDown', hasArrowKey)
+      live2d.setParameterValue('CatParamLeftHandDown', hasNonArrowKey)
+    } catch (error) {
+      console.error('處理按鍵時發生錯誤:', error)
+    }
   }
 
   /* async function handleMouseMove() {
@@ -89,15 +103,8 @@ export function useModel() {
   }
     */
 
-  function handleMouseDown(_value: string[]) { // value 前面加底線 直接不用他
+  function handleMouseDown(_value: string[]) {
     // 待補 點滑鼠扣怪物血
-
-    /* const hasLeftDown = value.includes('Left')
-    const hasRightDown = value.includes('Right')
-
-    live2d.setParameterValue('ParamMouseLeftDown', hasLeftDown)
-    live2d.setParameterValue('ParamMouseRightDown', hasRightDown)
-    */
   }
 
   return {
