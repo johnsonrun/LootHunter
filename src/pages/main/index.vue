@@ -18,8 +18,9 @@ const resizing = ref(false)
 const showInventory = ref(false)
 const showEquipment = ref(false)
 const showMenu = ref(false)
-const showDefaultKeyImage = ref(false)
+const showDefaultAttackImage = ref(false)
 const isProcessing = ref(false)
+const showTreasurePrompt = ref(false)
 
 onMounted(() => {
   console.warn('Generated monster image:', monsterStore.currentMonster?.image)
@@ -44,9 +45,9 @@ watch(pressedMouses, (newValue) => {
   if (newValue.length > 0 && !monsterStore.showTreasure && !isProcessing.value) {
     monsterStore.decreaseMonsterHp()
 
-    showDefaultKeyImage.value = true
+    showDefaultAttackImage.value = true
     setTimeout(() => {
-      showDefaultKeyImage.value = false
+      showDefaultAttackImage.value = false
     }, 200)
   }
   handleMouseDown(newValue)
@@ -73,17 +74,28 @@ watch(pressedKeys, (newValue) => {
       // 無論是否有破綻事件，都造成基本傷害
       monsterStore.decreaseMonsterHp()
 
-      showDefaultKeyImage.value = true
+      showDefaultAttackImage.value = true
       setTimeout(() => {
-        showDefaultKeyImage.value = false
+        showDefaultAttackImage.value = false
       }, 200)
     }
   } catch (error) {
     console.error('按鍵處理錯誤:', error)
-    showDefaultKeyImage.value = false
+    showDefaultAttackImage.value = false
   }
   handleKeyDown(newValue)
 }, { deep: false })
+
+// 監聽 isProcessing 變化
+watch(isProcessing, (newValue) => {
+  if (newValue) {
+    showTreasurePrompt.value = true
+    // 3 秒後隱藏提示
+    setTimeout(() => {
+      showTreasurePrompt.value = false
+    }, 3000)
+  }
+})
 
 watch(() => catStore.penetrable, (value) => {
   if (!monsterStore.showTreasure) {
@@ -190,12 +202,12 @@ function closePanel() {
             class="h-auto max-h-[80vh] max-w-[80vw] w-auto object-contain"
             :src="monsterStore.currentMonster.image"
           >
-          <!-- Default key image -->
+          <!-- Default attack image -->
           <img
-            v-if="showDefaultKeyImage"
-            alt="Default Key"
+            v-if="showDefaultAttackImage"
+            alt="Default Attack"
             class="absolute z-10 h-16 w-16 object-contain"
-            src="/images/default-key.png"
+            src="/images/defaultAttack.png"
             :style="{
               top: '50%',
               left: '50%',
@@ -280,6 +292,21 @@ function closePanel() {
           >
             發現破綻! <span class="text-red-400 font-bold">{{ monsterStore.weaknessTimer }}</span> 秒內發動會心一擊
             輸入: <span class="text-yellow-400 font-bold">{{ monsterStore.weaknessKeys.join(' > ') }}</span>
+          </div>
+
+          <!-- 寶箱提示 -->
+          <div
+            v-if="monsterStore.showTreasure"
+            class="absolute top-full mt-2 w-full text-sm text-white"
+          >
+            發現寶箱! <span class="text-yellow-400 font-bold">點擊寶箱</span> 即可開啟
+          </div>
+
+          <div
+            v-if="showTreasurePrompt"
+            class="absolute top-full mt-2 w-full text-sm text-white"
+          >
+            獲得了: <span class="text-white font-bold">{{ monsterStore.lastAddedItem?.name }}</span>
           </div>
         </div>
       </div>
