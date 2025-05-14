@@ -370,7 +370,17 @@ export const useMonsterStore = defineStore('monster', () => {
       hpRange = [1000, 1500]
     }
     const hp = Math.floor(Math.random() * (hpRange[1] - hpRange[0] + 1)) + hpRange[0]
-    const image = `/images/monsters/${rarity}.png`
+
+    // 根據怪物稀有度隨機選擇圖片 依據怪物圖片數量設置
+    const rarityImageCounts = {
+      common: 5,
+      magic: 4,
+      rare: 5,
+      exalted: 5,
+    }
+    const maxIndex = rarityImageCounts[rarity]
+    const randomIndex = Math.floor(Math.random() * maxIndex) + 1
+    const image = `/images/monsters/${rarity}${randomIndex}.png`
     currentMonster.value = {
       rarity,
       maxHp: hp,
