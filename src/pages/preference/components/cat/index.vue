@@ -15,8 +15,8 @@ const modeList: SelectProps['options'] = [
     value: 'standard',
   },
   {
-    label: '鍵盤模式',
-    value: 'keyboard',
+    label: '透明模式',
+    value: 'transparent',
   },
 ]
 </script>

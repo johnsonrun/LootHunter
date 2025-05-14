@@ -17,10 +17,12 @@ const monsterStore = useMonsterStore()
 const resizing = ref(false)
 const showInventory = ref(false)
 const showEquipment = ref(false)
+const showSkills = ref(false)
 const showMenu = ref(false)
 const showDefaultAttackImage = ref(false)
 const isProcessing = ref(false)
 const showTreasurePrompt = ref(false)
+const selectedItemId = ref<string | null>(null)
 
 onMounted(() => {
   console.warn('Generated monster image:', monsterStore.currentMonster?.image)
@@ -40,11 +42,9 @@ useEventListener('resize', () => {
   handleDebounceResize()
 })
 
-// 監聽滑鼠點擊，減少怪物血量
 watch(pressedMouses, (newValue) => {
   if (newValue.length > 0 && !monsterStore.showTreasure && !isProcessing.value) {
     monsterStore.decreaseMonsterHp()
-
     showDefaultAttackImage.value = true
     setTimeout(() => {
       showDefaultAttackImage.value = false
@@ -53,27 +53,21 @@ watch(pressedMouses, (newValue) => {
   handleMouseDown(newValue)
 })
 
-// 監聽鍵盤輸入，減少怪物血量
 const handleDebounceWeaknessKey = useDebounceFn((key: string) => {
   if (monsterStore.isWeaknessActive && monsterStore.weaknessTimer > 0) {
     console.warn('處理破綻按鍵:', key)
     monsterStore.handleKeyPress(key)
   }
-}, 50) // 50ms 的防抖時間
+}, 50)
 
 watch(pressedKeys, (newValue) => {
   try {
     if (newValue.length > 0 && !monsterStore.showTreasure && !isProcessing.value) {
-      // 如果有破綻事件，只處理新按下的按鍵
       if (monsterStore.isWeaknessActive && monsterStore.weaknessTimer > 0) {
-        // 只處理最後一個按下的按鍵，並使用防抖
         const lastKey = newValue[newValue.length - 1]
         handleDebounceWeaknessKey(lastKey)
       }
-
-      // 無論是否有破綻事件，都造成基本傷害
       monsterStore.decreaseMonsterHp()
-
       showDefaultAttackImage.value = true
       setTimeout(() => {
         showDefaultAttackImage.value = false
@@ -86,11 +80,9 @@ watch(pressedKeys, (newValue) => {
   handleKeyDown(newValue)
 }, { deep: false })
 
-// 監聽 isProcessing 變化
 watch(isProcessing, (newValue) => {
   if (newValue) {
     showTreasurePrompt.value = true
-    // 3 秒後隱藏提示
     setTimeout(() => {
       showTreasurePrompt.value = false
     }, 3000)
@@ -104,7 +96,6 @@ watch(() => catStore.penetrable, (value) => {
 }, { immediate: true })
 
 function handleWindowDrag(event: MouseEvent) {
-  // 如果點擊的是寶箱，不要啟動拖曳
   if (monsterStore.showTreasure) {
     event.preventDefault()
     return
@@ -124,22 +115,16 @@ async function handleTreasureClick(event: MouseEvent) {
   try {
     isProcessing.value = true
     console.warn('開始開啟寶箱...')
-
-    // 暫時禁用視窗穿透
     await appWindow.setIgnoreCursorEvents(false)
     await appWindow.emit('treasure-click')
-
     console.warn('準備調用 openTreasure...')
     await monsterStore.openTreasure()
     console.warn('openTreasure 調用完成')
-
-    // 輸出當前物品欄狀態
     console.warn('物品欄狀態:', JSON.stringify(monsterStore.inventory, null, 2))
   } catch (error) {
     console.error('開啟寶箱時發生錯誤:', error)
   } finally {
     isProcessing.value = false
-    // 恢復視窗穿透設定
     appWindow.setIgnoreCursorEvents(catStore.penetrable)
   }
 }
@@ -149,25 +134,53 @@ function toggleMenu() {
   if (!showMenu.value) {
     showInventory.value = false
     showEquipment.value = false
+    showSkills.value = false
+    selectedItemId.value = null
   }
 }
 
 function openInventory() {
   showInventory.value = true
   showEquipment.value = false
+  showSkills.value = false
 }
 
 function openEquipment() {
   showEquipment.value = true
   showInventory.value = false
+  showSkills.value = false
+}
+
+function openSkills() {
+  showSkills.value = true
+  showInventory.value = false
+  showEquipment.value = false
 }
 
 function closePanel() {
   showInventory.value = false
   showEquipment.value = false
+  showSkills.value = false
+  selectedItemId.value = null
 }
 
-// template 砍掉live2D了   <canvas id="live2dCanvas" />
+function handleItemClick(itemId: string) {
+  const item = monsterStore.inventory.find(i => i.id === itemId)
+  if (item && item.name.includes('技能書')) {
+    selectedItemId.value = selectedItemId.value === itemId ? null : itemId
+  }
+}
+
+function handleUseSkillBook(itemId: string) {
+  const success = monsterStore.useSkillBook(itemId)
+  if (success) {
+    selectedItemId.value = null
+  }
+}
+
+function handleClickOutside() {
+  selectedItemId.value = null
+}
 </script>
 
 <template>
@@ -175,18 +188,16 @@ function closePanel() {
     class="relative children:(absolute h-screen w-screen)"
     :class="[catStore.mirrorMode ? '-scale-x-100' : 'scale-x-100']"
     :style="{ opacity: catStore.opacity / 100 }"
+    @click="handleClickOutside"
     @mousedown="handleWindowDrag"
   >
     <img :src="`/images/backgrounds/${catStore.mode}.png`">
 
-    <!-- 怪物或寶箱顯示 -->
     <div
       v-if="monsterStore.currentMonster || monsterStore.showTreasure"
       class="absolute min-h-screen flex flex-col items-center justify-center overflow-visible"
     >
-      <!-- 怪物或寶箱圖片和血量條容器 -->
       <div class="flex flex-col items-center">
-        <!-- 怪物或寶箱圖片 -->
         <div class="relative">
           <img
             v-if="monsterStore.showTreasure"
@@ -202,7 +213,6 @@ function closePanel() {
             class="h-auto max-h-[80vh] max-w-[80vw] w-auto object-contain"
             :src="monsterStore.currentMonster.image"
           >
-          <!-- Default attack image -->
           <img
             v-if="showDefaultAttackImage"
             alt="Default Attack"
@@ -216,17 +226,15 @@ function closePanel() {
           >
         </div>
 
-        <!-- 血量條與資訊 -->
         <div class="relative mt-2 w-[400px]">
-          <!-- 怪物稀有度 -->
           <div
             v-if="monsterStore.currentMonster"
             class="absolute left-0 top--6 text-sm"
             :class="{
               'text-gray-200': monsterStore.currentMonster.rarity === 'common',
               'text-blue-400': monsterStore.currentMonster.rarity === 'magic',
-              'text-purple-400': monsterStore.currentMonster.rarity === 'rare',
-              'text-yellow-400': monsterStore.currentMonster.rarity === 'exalted',
+              'text-yellow-400': monsterStore.currentMonster.rarity === 'rare',
+              'text-purple-400': monsterStore.currentMonster.rarity === 'exalted',
             }"
           >
             {{ {
@@ -237,7 +245,6 @@ function closePanel() {
             }[monsterStore.currentMonster.rarity] }}
           </div>
 
-          <!-- 選單按鈕 -->
           <div class="absolute right-0 top--8">
             <button
               class="rounded-md bg-gray-800 px-1 py-1 text-white shadow-lg hover:bg-gray-700"
@@ -246,7 +253,6 @@ function closePanel() {
               選單
             </button>
 
-            <!-- 選單面板 -->
             <div
               v-if="showMenu"
               class="absolute bottom-full right-0 mt-2 w-17 rounded-md bg-gray-800 bg-opacity-90 p-1 shadow-lg"
@@ -259,15 +265,20 @@ function closePanel() {
                 物品欄
               </button>
               <button
-                class="w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                class="mb-1 w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
                 @mousedown.stop.prevent="openEquipment"
               >
                 裝備欄
               </button>
+              <button
+                class="w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                @mousedown.stop.prevent="openSkills"
+              >
+                技能欄
+              </button>
             </div>
           </div>
 
-          <!-- 血量條和數值 -->
           <div class="h-4 w-full rounded-full bg-gray-200">
             <div
               class="h-4 rounded-full"
@@ -285,7 +296,6 @@ function closePanel() {
             </span>
           </div>
 
-          <!-- 破綻提示 -->
           <div
             v-if="monsterStore.isWeaknessActive"
             class="absolute top-full mt-2 w-full text-sm text-white"
@@ -294,7 +304,6 @@ function closePanel() {
             輸入: <span class="text-yellow-400 font-bold">{{ monsterStore.weaknessKeys.join(' > ') }}</span>
           </div>
 
-          <!-- 寶箱提示 -->
           <div
             v-if="monsterStore.showTreasure"
             class="absolute top-full mt-2 w-full text-sm text-white"
@@ -312,7 +321,6 @@ function closePanel() {
       </div>
     </div>
 
-    <!-- 物品欄面板 -->
     <div
       v-if="showInventory"
       class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
@@ -323,7 +331,7 @@ function closePanel() {
           物品欄
         </h3>
         <button
-          class="rounded-full bg-gray-700 p-1 text-white hover:bg-gray-600"
+          class="bg-gray-700 p-0.5 text-white hover:bg-gray-600"
           @click.stop="closePanel"
         >
           <svg
@@ -333,10 +341,10 @@ function closePanel() {
             viewBox="0 0 24 24"
           >
             <path
-              d="M6 18L18 6M6 6l12 12"
+              d="M4 20L20 4M4 4l16 16"
               stroke-linecap="round"
               stroke-linejoin="round"
-              stroke-width="2"
+              stroke-width="4"
             />
           </svg>
         </button>
@@ -350,20 +358,38 @@ function closePanel() {
       <div
         v-for="item in monsterStore.inventory"
         :key="item.id"
-        class="mb-1 w-full flex items-center justify-between rounded-md p-2"
-        :class="{
-          'bg-gray-700': item.itemRarity === 'common',
-          'bg-blue-900': item.itemRarity === 'magic',
-          'bg-purple-900': item.itemRarity === 'rare',
-          'bg-yellow-900': item.itemRarity === 'exalted',
-        }"
+        class="relative mb-1 w-full flex items-center rounded-md bg-gray-900 p-2"
+        @click.stop="handleItemClick(item.id)"
       >
-        <span class="text-white">{{ item.name }}</span>
-        <span class="text-white">x{{ item.quantity }}</span>
+        <div class="flex items-center">
+          <span
+            class="ml-1 text-sm"
+            :class="{
+              'text-gray-400': item.itemRarity === 'common',
+              'text-blue-400': item.itemRarity === 'magic',
+              'text-yellow-400': item.itemRarity === 'rare',
+              'text-purple-400': item.itemRarity === 'exalted',
+            }"
+          >
+            {{ item.name }}
+          </span>
+          <span class="ml-2 text-sm text-white">x{{ item.quantity }}</span>
+        </div>
+        <div
+          v-if="selectedItemId === item.id && item.name.includes('技能書')"
+
+          @click.stop
+        >
+          <button
+            class="absolute right-1 top-1 z-15 rounded-md bg-gray-600 text-white hover:bg-gray-500"
+            @click.stop="handleUseSkillBook(item.id)"
+          >
+            使用
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 裝備欄面板 -->
     <div
       v-if="showEquipment"
       class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] max-w-md overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
@@ -374,7 +400,7 @@ function closePanel() {
           裝備欄
         </h3>
         <button
-          class="rounded-full bg-gray-700 p-1 text-white hover:bg-gray-600"
+          class="p-1 text-white hover:bg-gray-300"
           @click.stop="closePanel"
         >
           <svg
@@ -394,6 +420,49 @@ function closePanel() {
       </div>
       <div class="text-gray-400">
         尚未實裝
+      </div>
+    </div>
+
+    <div
+      v-if="showSkills"
+      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
+      @mousedown.stop.prevent
+    >
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg text-white font-bold">
+          技能欄
+        </h3>
+        <button
+          class="rounded-full bg-gray-700 p-1 text-white hover:bg-gray-600"
+          @click.stop="closePanel"
+        >
+          <svg
+            class="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M6 18L18 6M6 6l12 12"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            />
+          </svg>
+        </button>
+      </div>
+      <div
+        v-if="monsterStore.skills.length === 0"
+        class="text-gray-400"
+      >
+        尚無技能
+      </div>
+      <div
+        v-for="skill in monsterStore.skills"
+        :key="skill.name"
+        class="mb-1 w-full rounded-md bg-gray-700 p-2 text-white"
+      >
+        {{ skill.name }} Lv.{{ skill.level }}, Exp: {{ skill.level >= 9 ? 'Max' : skill.exp }}
       </div>
     </div>
   </div>

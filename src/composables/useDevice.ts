@@ -71,7 +71,7 @@ export function useDevice() {
   const normalizeKeyValue = (key: string) => {
     key = key.replace(/^(Meta).*/, '$1').replace(/F(\d+)/, 'Fn')
 
-    const isInvalidArrowKey = key.endsWith('Arrow') && catStore.mode !== 'keyboard'
+    const isInvalidArrowKey = key.endsWith('Arrow') && catStore.mode !== 'transparent'
     const isUnsupportedKey = !supportKeys.includes(key)
 
     if (isInvalidArrowKey || isUnsupportedKey) return

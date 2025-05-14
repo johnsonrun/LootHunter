@@ -15,6 +15,13 @@ export interface Item {
   quantity: number
 }
 
+// 技能介面
+export interface Skill {
+  name: string
+  level: number
+  exp: number
+}
+
 // 怪物介面
 export interface Monster {
   rarity: MonsterRarity
@@ -32,6 +39,9 @@ export const useMonsterStore = defineStore('monster', () => {
 
   // 物品欄
   const inventory = ref<Item[]>([])
+
+  // 技能欄
+  const skills = ref<Skill[]>([])
 
   // 儲存最新加入的物品
   const lastAddedItem = ref<Item | null>(null)
@@ -189,7 +199,6 @@ export const useMonsterStore = defineStore('monster', () => {
   // 添加物品到物品欄
   function addItemToInventory(item: { name: string, itemRarity: ItemRarity }) {
     console.warn('addItemToInventory 開始，item:', item)
-    // 根據 name 檢查現有物品
     const existingItem = inventory.value.find(i => i.name === item.name)
     if (existingItem) {
       existingItem.quantity += 1
@@ -216,17 +225,79 @@ export const useMonsterStore = defineStore('monster', () => {
     console.warn('當前物品欄:', inventory.value)
   }
 
+  // 從物品欄移除物品
+  function removeItemFromInventory(itemId: string) {
+    const item = inventory.value.find(i => i.id === itemId)
+    if (item) {
+      if (item.quantity > 1) {
+        item.quantity -= 1
+      } else {
+        inventory.value = inventory.value.filter(i => i.id !== itemId)
+      }
+      console.warn('移除物品後的物品欄:', inventory.value)
+    }
+  }
+
+  // 技能升級經驗表
+  const expToLevelUp = [
+    { level: 1, exp: 5 },
+    { level: 2, exp: 10 },
+    { level: 3, exp: 20 },
+    { level: 4, exp: 50 },
+    { level: 5, exp: 100 },
+    { level: 6, exp: 200 },
+    { level: 7, exp: 500 },
+    { level: 8, exp: 1000 },
+  ]
+
+  // 使用技能書
+  function useSkillBook(itemId: string) {
+    const item = inventory.value.find(i => i.id === itemId)
+    if (!item || !item.name.includes('技能書')) return false
+
+    const skillName = item.name.replace('技能書: ', '').trim()
+    let skill = skills.value.find(s => s.name === skillName)
+
+    // 檢查技能是否已達最大等級
+    if (skill && skill.level >= 9) {
+      console.warn(`技能 ${skillName} 已達最大等級 Lv.9, Exp: Max`)
+      return false
+    }
+
+    // 移除使用的技能書
+    removeItemFromInventory(itemId)
+
+    if (!skill) {
+      // 新增技能
+      skill = { name: skillName, level: 1, exp: 0 }
+      skills.value.push(skill)
+    }
+
+    // 增加經驗值
+    skill.exp += 1
+    console.warn(`技能 ${skillName} 經驗增加: Lv.${skill.level}, Exp: ${skill.exp}`)
+
+    // 檢查是否升級
+    const nextLevel = expToLevelUp.find(l => l.level === skill.level)
+    if (nextLevel && skill.exp >= nextLevel.exp) {
+      skill.level += 1
+      skill.exp = 0
+      console.warn(`技能 ${skillName} 升級至 Lv.${skill.level}`)
+    }
+
+    return true
+  }
+
   // 隨機選擇物品（基於機率）
   function rollItem(monsterRarity: MonsterRarity): { name: string, itemRarity: ItemRarity } {
     const roll = Math.random() * 100
     let cumulative = 0
 
-    // 定義掉落表
     const dropTables: Record<MonsterRarity, Array<{ chance: number, type: string, rarity: ItemRarity }>> = {
       common: [
-        { chance: 89, type: 'material', rarity: 'common' },
-        { chance: 10, type: 'equipment', rarity: 'common' },
-        { chance: 1, type: 'skillBook', rarity: 'rare' },
+        { chance: 1, type: 'material', rarity: 'common' },
+        { chance: 1, type: 'equipment', rarity: 'common' },
+        { chance: 98, type: 'skillBook', rarity: 'rare' },
       ],
       magic: [
         { chance: 73, type: 'material', rarity: 'magic' },
@@ -255,7 +326,6 @@ export const useMonsterStore = defineStore('monster', () => {
       ],
     }
 
-    // 選擇物品類型和稀有度
     const drops = dropTables[monsterRarity]
     let selectedType: string | null = null
     let selectedRarity: ItemRarity = 'common'
@@ -274,7 +344,6 @@ export const useMonsterStore = defineStore('monster', () => {
       return { name: '普通材料', itemRarity: 'common' }
     }
 
-    // 根據類型選擇具體物品
     if (selectedType === 'material') {
       const materialNames: Record<ItemRarity, string> = {
         common: '普通材料',
@@ -304,7 +373,7 @@ export const useMonsterStore = defineStore('monster', () => {
           return { name: equip.name, itemRarity: selectedRarity }
         }
       }
-      return { name: '武器', itemRarity: selectedRarity } // 預設
+      return { name: '武器', itemRarity: selectedRarity }
     } else if (selectedType === 'skillBook') {
       const skillRoll = Math.random() * 100
       const skillBooks = [
@@ -321,7 +390,7 @@ export const useMonsterStore = defineStore('monster', () => {
           return { name: skill.name, itemRarity: 'rare' }
         }
       }
-      return { name: '技能書: 刺拳', itemRarity: 'rare' } // 預設
+      return { name: '技能書: 刺拳', itemRarity: 'rare' }
     } else if (selectedType === 'ultimateBook') {
       const ultimateRoll = Math.random() * 100
       const ultimateBooks = [
@@ -338,7 +407,7 @@ export const useMonsterStore = defineStore('monster', () => {
           return { name: book.name, itemRarity: 'exalted' }
         }
       }
-      return { name: '絕招秘笈: 竭力一擊', itemRarity: 'exalted' } // 預設
+      return { name: '絕招秘笈: 竭力一擊', itemRarity: 'exalted' }
     } else if (selectedType === 'mysteriousCollectible') {
       return { name: '神秘收藏品', itemRarity: 'rare' }
     } else if (selectedType === 'secretCollectible') {
@@ -370,8 +439,6 @@ export const useMonsterStore = defineStore('monster', () => {
       hpRange = [1000, 1500]
     }
     const hp = Math.floor(Math.random() * (hpRange[1] - hpRange[0] + 1)) + hpRange[0]
-
-    // 根據怪物稀有度隨機選擇圖片 依據怪物圖片數量設置
     const rarityImageCounts = {
       common: 5,
       magic: 4,
@@ -412,17 +479,10 @@ export const useMonsterStore = defineStore('monster', () => {
       return
     }
 
-    // 根據怪物稀有度隨機選擇物品
     const item = rollItem(rarity)
     console.warn('掉落物品:', item)
-
-    // 添加物品到物品欄
     addItemToInventory(item)
-
-    // 清除寶箱狀態
     showTreasure.value = false
-
-    // 生成新怪物
     await new Promise(resolve => setTimeout(resolve, 100))
     generateMonster()
   }
@@ -431,6 +491,7 @@ export const useMonsterStore = defineStore('monster', () => {
     currentMonster,
     showTreasure,
     inventory,
+    skills,
     lastAddedItem,
     hpPercentage,
     lastDefeatedMonsterRarity,
@@ -441,5 +502,6 @@ export const useMonsterStore = defineStore('monster', () => {
     decreaseMonsterHp,
     openTreasure,
     handleKeyPress,
+    useSkillBook,
   }
 })

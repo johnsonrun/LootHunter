@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type CatMode = 'standard' | 'keyboard'
+export type CatMode = 'standard' | 'transparent'
 
 export const useCatStore = defineStore('cat', () => {
   const mode = ref<CatMode>('standard')
