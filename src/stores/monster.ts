@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 // 怪物稀有度類型
 export type MonsterRarity = 'common' | 'magic' | 'rare' | 'exalted'
 
-// 物品類型
+// 物品稀有度類型
 export type ItemRarity = 'common' | 'magic' | 'rare' | 'exalted'
 
 // 物品介面
@@ -46,6 +46,9 @@ export const useMonsterStore = defineStore('monster', () => {
   const weaknessTimerInterval = ref<number | null>(null)
   const keySequence = ref<string[]>([])
 
+  // 用於生成唯一 ID 的計數器
+  let itemIdCounter = 0
+
   // 計算當前怪物血量百分比
   const hpPercentage = computed(() => {
     if (!currentMonster.value) return 0
@@ -55,7 +58,6 @@ export const useMonsterStore = defineStore('monster', () => {
   // 檢查是否觸發破綻
   function checkWeakness() {
     if (!currentMonster.value || isWeaknessActive.value) return
-
     const percentage = hpPercentage.value
     if (percentage % 5 === 0 && percentage > 5 && percentage < 100) {
       if (Math.random() < 0.2) {
@@ -67,17 +69,14 @@ export const useMonsterStore = defineStore('monster', () => {
   // 觸發破綻事件
   function triggerWeakness() {
     if (!currentMonster.value) return
-
     if (weaknessTimerInterval.value) {
       clearInterval(weaknessTimerInterval.value)
       weaknessTimerInterval.value = null
     }
-
     weaknessKeys.value = generateRandomKeys()
     isWeaknessActive.value = true
     weaknessTimer.value = 5
     keySequence.value = []
-
     weaknessTimerInterval.value = window.setInterval(() => {
       if (weaknessTimer.value > 0) {
         weaknessTimer.value--
@@ -98,12 +97,10 @@ export const useMonsterStore = defineStore('monster', () => {
     weaknessKeys.value = []
     keySequence.value = []
     weaknessTimer.value = 5
-
     if (weaknessTimerInterval.value) {
       clearInterval(weaknessTimerInterval.value)
       weaknessTimerInterval.value = null
     }
-
     console.warn('破綻狀態已清除:', {
       是否啟動: isWeaknessActive.value,
       目標按鍵序列: [...weaknessKeys.value],
@@ -117,13 +114,11 @@ export const useMonsterStore = defineStore('monster', () => {
     const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
     const result: string[] = []
     const availableKeys = [...keys]
-
     for (let i = 0; i < 3; i++) {
       const randomIndex = Math.floor(Math.random() * availableKeys.length)
       result.push(availableKeys[randomIndex])
       availableKeys.splice(randomIndex, 1)
     }
-
     console.warn('生成的按鍵序列:', result)
     return result
   }
@@ -135,7 +130,6 @@ export const useMonsterStore = defineStore('monster', () => {
       keySequence.value = []
       return
     }
-
     const inputKey = key.replace('Key', '').toLowerCase()
     console.warn('----------------------------------------')
     console.warn('按下按鍵:', inputKey)
@@ -145,15 +139,12 @@ export const useMonsterStore = defineStore('monster', () => {
       當前按鍵序列: [...keySequence.value],
       計時器: weaknessTimer.value,
     })
-
     if (keySequence.value.length >= 3) {
       keySequence.value.shift()
     }
     keySequence.value.push(inputKey)
-
     console.warn('按鍵序列更新:', [...keySequence.value])
     console.warn('----------------------------------------')
-
     if (keySequence.value.length === 3) {
       const isMatch = keySequence.value.every((key: string, index: number) => key === weaknessKeys.value[index])
       console.warn('按鍵比對結果:', {
@@ -161,12 +152,10 @@ export const useMonsterStore = defineStore('monster', () => {
         目標按鍵: [...weaknessKeys.value],
         是否匹配: isMatch,
       })
-
       if (isMatch) {
         console.warn('成功完成按鍵序列！觸發會心一擊！')
         const damage = Math.floor(currentMonster.value.maxHp * 0.05)
         currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - damage)
-
         if (currentMonster.value.currentHp === 0) {
           lastDefeatedMonsterRarity.value = currentMonster.value.rarity
           currentMonster.value = null
@@ -181,10 +170,8 @@ export const useMonsterStore = defineStore('monster', () => {
   // 減少怪物血量
   function decreaseMonsterHp() {
     if (!currentMonster.value || showTreasure.value) return
-
     currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - 1)
     checkWeakness()
-
     if (currentMonster.value.currentHp === 0) {
       lastDefeatedMonsterRarity.value = currentMonster.value.rarity
       currentMonster.value = null
@@ -193,48 +180,182 @@ export const useMonsterStore = defineStore('monster', () => {
     }
   }
 
+  // 生成五位數字 ID
+  function generateItemId(): string {
+    itemIdCounter = (itemIdCounter + 1) % 100000
+    return itemIdCounter.toString().padStart(5, '0')
+  }
+
   // 添加物品到物品欄
-  function addItemToInventory(itemRarity: ItemRarity) {
-    const itemNames = {
-      common: '普通材料',
-      magic: '魔法材料',
-      rare: '稀有材料',
-      exalted: '崇高材料',
-    }
-
-    // 檢查是否已存在相同類型的物品
-    const existingItem = inventory.value.find(item => item.itemRarity === itemRarity)
-
+  function addItemToInventory(item: { name: string, itemRarity: ItemRarity }) {
+    console.warn('addItemToInventory 開始，item:', item)
+    // 根據 name 檢查現有物品
+    const existingItem = inventory.value.find(i => i.name === item.name)
     if (existingItem) {
-      // 增加數量並更新 lastAddedItem
       existingItem.quantity += 1
-      lastAddedItem.value = { ...existingItem } // 複製以避免直接修改
-      console.warn('增加物品數量:', itemRarity, '當前數量:', existingItem.quantity, 'lastAddedItem:', lastAddedItem.value)
+      lastAddedItem.value = { ...existingItem }
+      console.warn('增加物品數量:', {
+        name: item.name,
+        quantity: existingItem.quantity,
+        lastAddedItem: lastAddedItem.value,
+      })
     } else {
-      // 創建新物品
       const newItem = {
-        id: `${itemRarity}-${Date.now()}`,
-        itemRarity,
-        name: itemNames[itemRarity],
+        id: generateItemId(),
+        itemRarity: item.itemRarity,
+        name: item.name,
         quantity: 1,
       }
       inventory.value.push(newItem)
       lastAddedItem.value = newItem
-      console.warn('新增物品:', newItem, 'lastAddedItem:', lastAddedItem.value)
+      console.warn('新增物品:', {
+        newItem,
+        lastAddedItem: lastAddedItem.value,
+      })
+    }
+    console.warn('當前物品欄:', inventory.value)
+  }
+
+  // 隨機選擇物品（基於機率）
+  function rollItem(monsterRarity: MonsterRarity): { name: string, itemRarity: ItemRarity } {
+    const roll = Math.random() * 100
+    let cumulative = 0
+
+    // 定義掉落表
+    const dropTables: Record<MonsterRarity, Array<{ chance: number, type: string, rarity: ItemRarity }>> = {
+      common: [
+        { chance: 89, type: 'material', rarity: 'common' },
+        { chance: 10, type: 'equipment', rarity: 'common' },
+        { chance: 1, type: 'skillBook', rarity: 'rare' },
+      ],
+      magic: [
+        { chance: 73, type: 'material', rarity: 'magic' },
+        { chance: 15, type: 'equipment', rarity: 'common' },
+        { chance: 10, type: 'equipment', rarity: 'magic' },
+        { chance: 2, type: 'skillBook', rarity: 'rare' },
+      ],
+      rare: [
+        { chance: 60, type: 'material', rarity: 'rare' },
+        { chance: 10, type: 'equipment', rarity: 'common' },
+        { chance: 15, type: 'equipment', rarity: 'magic' },
+        { chance: 10, type: 'equipment', rarity: 'rare' },
+        { chance: 3, type: 'skillBook', rarity: 'rare' },
+        { chance: 1, type: 'ultimateBook', rarity: 'exalted' },
+        { chance: 1, type: 'mysteriousCollectible', rarity: 'rare' },
+      ],
+      exalted: [
+        { chance: 53, type: 'material', rarity: 'exalted' },
+        { chance: 10, type: 'equipment', rarity: 'magic' },
+        { chance: 15, type: 'equipment', rarity: 'rare' },
+        { chance: 10, type: 'equipment', rarity: 'exalted' },
+        { chance: 5, type: 'skillBook', rarity: 'rare' },
+        { chance: 2, type: 'ultimateBook', rarity: 'exalted' },
+        { chance: 4, type: 'mysteriousCollectible', rarity: 'rare' },
+        { chance: 1, type: 'secretCollectible', rarity: 'exalted' },
+      ],
     }
 
-    console.warn('當前物品欄:', inventory.value)
+    // 選擇物品類型和稀有度
+    const drops = dropTables[monsterRarity]
+    let selectedType: string | null = null
+    let selectedRarity: ItemRarity = 'common'
+
+    for (const drop of drops) {
+      cumulative += drop.chance
+      if (roll <= cumulative) {
+        selectedType = drop.type
+        selectedRarity = drop.rarity
+        break
+      }
+    }
+
+    if (!selectedType) {
+      console.warn('未選擇物品類型，使用預設普通材料')
+      return { name: '普通材料', itemRarity: 'common' }
+    }
+
+    // 根據類型選擇具體物品
+    if (selectedType === 'material') {
+      const materialNames: Record<ItemRarity, string> = {
+        common: '普通材料',
+        magic: '魔法材料',
+        rare: '稀有材料',
+        exalted: '崇高材料',
+      }
+      return { name: materialNames[selectedRarity], itemRarity: selectedRarity }
+    } else if (selectedType === 'equipment') {
+      const equipmentRoll = Math.random() * 100
+      const equipmentTypes = [
+        { chance: 10, name: '頭盔' },
+        { chance: 5, name: '項鍊' },
+        { chance: 10, name: '胸甲' },
+        { chance: 1, name: '披風' },
+        { chance: 10, name: '手套' },
+        { chance: 7, name: '戒指' },
+        { chance: 7, name: '腰帶' },
+        { chance: 10, name: '褲子' },
+        { chance: 10, name: '靴子' },
+        { chance: 30, name: '武器' },
+      ]
+      let equipmentCumulative = 0
+      for (const equip of equipmentTypes) {
+        equipmentCumulative += equip.chance
+        if (equipmentRoll <= equipmentCumulative) {
+          return { name: equip.name, itemRarity: selectedRarity }
+        }
+      }
+      return { name: '武器', itemRarity: selectedRarity } // 預設
+    } else if (selectedType === 'skillBook') {
+      const skillRoll = Math.random() * 100
+      const skillBooks = [
+        { chance: 30, name: '技能書: 刺拳' },
+        { chance: 20, name: '技能書: 電球' },
+        { chance: 10, name: '技能書: 後旋踢' },
+        { chance: 20, name: '技能書: 冰刺' },
+        { chance: 20, name: '技能書: 火雨' },
+      ]
+      let skillCumulative = 0
+      for (const skill of skillBooks) {
+        skillCumulative += skill.chance
+        if (skillRoll <= skillCumulative) {
+          return { name: skill.name, itemRarity: 'rare' }
+        }
+      }
+      return { name: '技能書: 刺拳', itemRarity: 'rare' } // 預設
+    } else if (selectedType === 'ultimateBook') {
+      const ultimateRoll = Math.random() * 100
+      const ultimateBooks = [
+        { chance: 30, name: '絕招秘笈: 竭力一擊' },
+        { chance: 20, name: '絕招秘笈: 烈焰爆' },
+        { chance: 20, name: '絕招秘笈: 重力壓制' },
+        { chance: 10, name: '絕招秘笈: 幻影連擊' },
+        { chance: 20, name: '絕招秘笈: 割喉' },
+      ]
+      let ultimateCumulative = 0
+      for (const book of ultimateBooks) {
+        ultimateCumulative += book.chance
+        if (ultimateRoll <= ultimateCumulative) {
+          return { name: book.name, itemRarity: 'exalted' }
+        }
+      }
+      return { name: '絕招秘笈: 竭力一擊', itemRarity: 'exalted' } // 預設
+    } else if (selectedType === 'mysteriousCollectible') {
+      return { name: '神秘收藏品', itemRarity: 'rare' }
+    } else if (selectedType === 'secretCollectible') {
+      return { name: '絕密收藏品', itemRarity: 'exalted' }
+    }
+
+    console.warn('未匹配任何物品，使用預設普通材料')
+    return { name: '普通材料', itemRarity: 'common' }
   }
 
   // 隨機生成怪物
   function generateMonster() {
     console.warn('Generating new monster...')
     showTreasure.value = false
-
     const rarityRoll = Math.random() * 100
     let rarity: MonsterRarity
     let hpRange: [number, number]
-
     if (rarityRoll < 60) {
       rarity = 'common'
       hpRange = [30, 100]
@@ -248,17 +369,14 @@ export const useMonsterStore = defineStore('monster', () => {
       rarity = 'exalted'
       hpRange = [1000, 1500]
     }
-
     const hp = Math.floor(Math.random() * (hpRange[1] - hpRange[0] + 1)) + hpRange[0]
     const image = `/images/monsters/${rarity}.png`
-
     currentMonster.value = {
       rarity,
       maxHp: hp,
       currentHp: hp,
       image,
     }
-
     console.warn('New monster generated:', currentMonster.value)
   }
 
@@ -284,31 +402,17 @@ export const useMonsterStore = defineStore('monster', () => {
       return
     }
 
-    let itemRarity: ItemRarity
-    console.warn('準備決定物品類型，當前 rarity:', rarity)
+    // 根據怪物稀有度隨機選擇物品
+    const item = rollItem(rarity)
+    console.warn('掉落物品:', item)
 
-    switch (rarity) {
-      case 'common':
-        itemRarity = 'common'
-        break
-      case 'magic':
-        itemRarity = 'magic'
-        break
-      case 'rare':
-        itemRarity = 'rare'
-        break
-      case 'exalted':
-        itemRarity = 'exalted'
-        break
-      default:
-        console.error('未知的怪物稀有度:', rarity)
-        return
-    }
+    // 添加物品到物品欄
+    addItemToInventory(item)
 
-    console.warn('掉落物品稀有度:', itemRarity)
-    addItemToInventory(itemRarity)
+    // 清除寶箱狀態
     showTreasure.value = false
 
+    // 生成新怪物
     await new Promise(resolve => setTimeout(resolve, 100))
     generateMonster()
   }
@@ -317,7 +421,7 @@ export const useMonsterStore = defineStore('monster', () => {
     currentMonster,
     showTreasure,
     inventory,
-    lastAddedItem, // 暴露 lastAddedItem
+    lastAddedItem,
     hpPercentage,
     lastDefeatedMonsterRarity,
     isWeaknessActive,
