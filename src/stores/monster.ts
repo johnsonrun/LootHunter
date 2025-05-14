@@ -5,12 +5,12 @@ import { computed, ref } from 'vue'
 export type MonsterRarity = 'common' | 'magic' | 'rare' | 'exalted'
 
 // 物品類型
-export type ItemType = 'common' | 'magic' | 'rare' | 'exalted'
+export type ItemRarity = 'common' | 'magic' | 'rare' | 'exalted'
 
 // 物品介面
 export interface Item {
   id: string
-  type: ItemType
+  itemRarity: ItemRarity
   name: string
   quantity: number
 }
@@ -194,7 +194,7 @@ export const useMonsterStore = defineStore('monster', () => {
   }
 
   // 添加物品到物品欄
-  function addItemToInventory(type: ItemType) {
+  function addItemToInventory(itemRarity: ItemRarity) {
     const itemNames = {
       common: '普通材料',
       magic: '魔法材料',
@@ -203,19 +203,19 @@ export const useMonsterStore = defineStore('monster', () => {
     }
 
     // 檢查是否已存在相同類型的物品
-    const existingItem = inventory.value.find(item => item.type === type)
+    const existingItem = inventory.value.find(item => item.itemRarity === itemRarity)
 
     if (existingItem) {
       // 增加數量並更新 lastAddedItem
       existingItem.quantity += 1
       lastAddedItem.value = { ...existingItem } // 複製以避免直接修改
-      console.warn('增加物品數量:', type, '當前數量:', existingItem.quantity, 'lastAddedItem:', lastAddedItem.value)
+      console.warn('增加物品數量:', itemRarity, '當前數量:', existingItem.quantity, 'lastAddedItem:', lastAddedItem.value)
     } else {
       // 創建新物品
       const newItem = {
-        id: `${type}-${Date.now()}`,
-        type,
-        name: itemNames[type],
+        id: `${itemRarity}-${Date.now()}`,
+        itemRarity,
+        name: itemNames[itemRarity],
         quantity: 1,
       }
       inventory.value.push(newItem)
@@ -284,29 +284,29 @@ export const useMonsterStore = defineStore('monster', () => {
       return
     }
 
-    let itemType: ItemType
+    let itemRarity: ItemRarity
     console.warn('準備決定物品類型，當前 rarity:', rarity)
 
     switch (rarity) {
       case 'common':
-        itemType = 'common'
+        itemRarity = 'common'
         break
       case 'magic':
-        itemType = 'magic'
+        itemRarity = 'magic'
         break
       case 'rare':
-        itemType = 'rare'
+        itemRarity = 'rare'
         break
       case 'exalted':
-        itemType = 'exalted'
+        itemRarity = 'exalted'
         break
       default:
         console.error('未知的怪物稀有度:', rarity)
         return
     }
 
-    console.warn('掉落物品類型:', itemType)
-    addItemToInventory(itemType)
+    console.warn('掉落物品稀有度:', itemRarity)
+    addItemToInventory(itemRarity)
     showTreasure.value = false
 
     await new Promise(resolve => setTimeout(resolve, 100))

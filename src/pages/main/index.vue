@@ -352,10 +352,10 @@ function closePanel() {
         :key="item.id"
         class="mb-1 w-full flex items-center justify-between rounded-md p-2"
         :class="{
-          'bg-gray-700': item.type === 'common',
-          'bg-blue-900': item.type === 'magic',
-          'bg-purple-900': item.type === 'rare',
-          'bg-yellow-900': item.type === 'exalted',
+          'bg-gray-700': item.itemRarity === 'common',
+          'bg-blue-900': item.itemRarity === 'magic',
+          'bg-purple-900': item.itemRarity === 'rare',
+          'bg-yellow-900': item.itemRarity === 'exalted',
         }"
       >
         <span class="text-white">{{ item.name }}</span>
