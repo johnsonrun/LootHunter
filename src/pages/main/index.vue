@@ -204,8 +204,58 @@ function closePanel() {
           >
         </div>
 
-        <!-- 血量條和數值 -->
-        <div class="relative w-[400px]">
+        <!-- 血量條與資訊 -->
+        <div class="relative mt-2 w-[400px]">
+          <!-- 怪物稀有度 -->
+          <div
+            v-if="monsterStore.currentMonster"
+            class="absolute left-0 top--6 text-sm"
+            :class="{
+              'text-gray-200': monsterStore.currentMonster.rarity === 'common',
+              'text-blue-400': monsterStore.currentMonster.rarity === 'magic',
+              'text-purple-400': monsterStore.currentMonster.rarity === 'rare',
+              'text-yellow-400': monsterStore.currentMonster.rarity === 'exalted',
+            }"
+          >
+            {{ {
+              common: '普通',
+              magic: '魔法',
+              rare: '稀有',
+              exalted: '崇高',
+            }[monsterStore.currentMonster.rarity] }}
+          </div>
+
+          <!-- 選單按鈕 -->
+          <div class="absolute right-0 top--8">
+            <button
+              class="rounded-md bg-gray-800 px-1 py-1 text-white shadow-lg hover:bg-gray-700"
+              @mousedown.stop.prevent="toggleMenu"
+            >
+              選單
+            </button>
+
+            <!-- 選單面板 -->
+            <div
+              v-if="showMenu"
+              class="absolute bottom-full right-0 mt-2 w-17 rounded-md bg-gray-800 bg-opacity-90 p-1 shadow-lg"
+              @mousedown.stop.prevent
+            >
+              <button
+                class="mb-1 w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                @mousedown.stop.prevent="openInventory"
+              >
+                物品欄
+              </button>
+              <button
+                class="w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                @mousedown.stop.prevent="openEquipment"
+              >
+                裝備欄
+              </button>
+            </div>
+          </div>
+
+          <!-- 血量條和數值 -->
           <div class="h-4 w-full rounded-full bg-gray-200">
             <div
               class="h-4 rounded-full"
@@ -222,100 +272,15 @@ function closePanel() {
               {{ monsterStore.currentMonster?.currentHp }} / {{ monsterStore.currentMonster?.maxHp }}
             </span>
           </div>
-        </div>
-      </div>
 
-      <!-- 怪物稀有度 -->
-      <div
-        v-if="monsterStore.currentMonster"
-        class="mt-2 w-[400px] text-sm"
-        :class="{
-          'text-gray-200': monsterStore.currentMonster.rarity === 'common',
-          'text-blue-400': monsterStore.currentMonster.rarity === 'magic',
-          'text-purple-400': monsterStore.currentMonster.rarity === 'rare',
-          'text-yellow-400': monsterStore.currentMonster.rarity === 'exalted',
-        }"
-      >
-        {{ {
-          common: '普通',
-          magic: '魔法',
-          rare: '稀有',
-          exalted: '崇高',
-        }[monsterStore.currentMonster.rarity] }}
-      </div>
-
-      <!-- 選單按鈕 -->
-      <div class="mt-2 w-[400px] flex justify-end">
-        <div class="relative">
-          <button
-            class="rounded-md bg-gray-800 px-3 py-1 text-white shadow-lg hover:bg-gray-700"
-            @mousedown.stop.prevent="toggleMenu"
-          >
-            選單列表
-          </button>
-
-          <!-- 選單面板 -->
+          <!-- 破綻提示 -->
           <div
-            v-if="showMenu"
-            class="absolute right-0 top-full mt-2 w-48 rounded-md bg-gray-800 bg-opacity-90 p-2 shadow-lg"
-            @mousedown.stop.prevent
+            v-if="monsterStore.isWeaknessActive"
+            class="absolute top-full mt-2 w-full text-sm text-white"
           >
-            <button
-              class="mb-1 w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
-              @mousedown.stop.prevent="openInventory"
-            >
-              物品欄
-            </button>
-            <button
-              class="w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
-              @mousedown.stop.prevent="openEquipment"
-            >
-              裝備欄
-            </button>
+            發現破綻! <span class="text-red-400 font-bold">{{ monsterStore.weaknessTimer }}</span> 秒內發動會心一擊
+            輸入: <span class="text-yellow-400 font-bold">{{ monsterStore.weaknessKeys.join(' > ') }}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- 破綻提示 -->
-      <div
-        v-if="monsterStore.isWeaknessActive"
-        class="mt-2 w-[400px] text-sm text-white"
-      >
-        {{ monsterStore.weaknessTimer }} 秒內輸入: {{ monsterStore.weaknessKeys.join(' > ') }}
-      </div>
-    </div>
-
-    <!-- 寶箱事件時的選單按鈕 -->
-    <div
-      v-if="monsterStore.showTreasure"
-      class="fixed bottom-4 right-4 z-[9999]"
-    >
-      <div class="relative">
-        <button
-          class="rounded-md bg-gray-800 px-3 py-1 text-white shadow-lg hover:bg-gray-700"
-          @mousedown.stop.prevent="toggleMenu"
-        >
-          選單列表
-        </button>
-
-        <!-- 選單面板 -->
-        <div
-          v-if="showMenu"
-          class="absolute right-0 top-full mt-2 w-48 rounded-md bg-gray-800 bg-opacity-90 p-2 shadow-lg"
-          @mousedown.stop.prevent
-        >
-          <button
-            class="mb-1 w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
-            @mousedown.stop.prevent="openInventory"
-          >
-            物品欄
-          </button>
-          <button
-            class="w-full rounded-md bg-gray-700 px-3 py-1 text-left text-white hover:bg-gray-600"
-            @mousedown.stop.prevent="openEquipment"
-          >
-            裝備欄
-          </button>
         </div>
       </div>
     </div>
@@ -323,7 +288,7 @@ function closePanel() {
     <!-- 物品欄面板 -->
     <div
       v-if="showInventory"
-      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] max-w-md w-full overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg -translate-x-1/2"
+      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
       <div class="mb-4 flex items-center justify-between">
@@ -358,7 +323,7 @@ function closePanel() {
       <div
         v-for="item in monsterStore.inventory"
         :key="item.id"
-        class="mb-1 flex items-center justify-between rounded-md p-2"
+        class="mb-1 w-full flex items-center justify-between rounded-md p-2"
         :class="{
           'bg-gray-700': item.type === 'common',
           'bg-blue-900': item.type === 'magic',
@@ -374,7 +339,7 @@ function closePanel() {
     <!-- 裝備欄面板 -->
     <div
       v-if="showEquipment"
-      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] max-w-md w-full overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg -translate-x-1/2"
+      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] max-w-md overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
       <div class="mb-4 flex items-center justify-between">
