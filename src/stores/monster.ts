@@ -30,6 +30,15 @@ export interface Monster {
   image: string
 }
 
+// 技能配置介面
+interface SkillConfig {
+  name: string
+  command: string[] | null
+  effect: (monster: Monster) => void
+  image: string
+  interval?: number // 用於被動技能的觸發間隔（秒）
+}
+
 export const useMonsterStore = defineStore('monster', () => {
   // 當前怪物
   const currentMonster = ref<Monster | null>(null)
@@ -56,8 +65,108 @@ export const useMonsterStore = defineStore('monster', () => {
   const weaknessTimerInterval = ref<number | null>(null)
   const keySequence = ref<string[]>([])
 
+  // 技能相關狀態
+  const skillKeySequences = ref<{ [key: string]: string[] }>({})
+  const activeSkillImage = ref<{ name: string, image: string } | null>(null)
+  const passiveSkillIntervals = ref<{ [key: string]: number }>({})
+  const skillSequenceTimeouts = ref<{ [key: string]: number }>({}) // 新增：追蹤技能序列超時
+
   // 用於生成唯一 ID 的計數器
   let itemIdCounter = 0
+
+  // 技能配置
+  const skillConfigs: SkillConfig[] = [
+    {
+      name: '刺拳',
+      command: ['h', 'j', 'k', 'l'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/刺拳.png',
+    },
+    {
+      name: '電球',
+      command: ['a', 'w', 'd', 'r'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/電球.png',
+    },
+    {
+      name: '冰刺',
+      command: ['z', 's', 'e', 'f', 'v'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/冰刺.png',
+    },
+    {
+      name: '後旋踢',
+      command: ['d', 's', 'a'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/後旋踢.png',
+    },
+    {
+      name: '岩彈',
+      command: ['h', 'u', 'k'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/岩彈.png',
+    },
+    {
+      name: '火雨',
+      command: ['z', 'w', 'c', 'e', 't', 'h', 'm', 'u', 'p', '9'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 4)
+      },
+      image: '/images/skills/火雨.png',
+    },
+    {
+      name: '風刃',
+      command: ['s', 'r', 'h', 'i'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 2)
+      },
+      image: '/images/skills/風刃.png',
+    },
+    {
+      name: '毒沼',
+      command: null,
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/毒沼.png',
+      interval: 10,
+    },
+    {
+      name: '三叉戟之舞',
+      command: ['a'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 2)
+      },
+      image: '/images/skills/三叉戟之舞.png',
+    },
+    {
+      name: '雷爆',
+      command: ['q', '4', 'y', '3', '9', 'c'],
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 4)
+      },
+      image: '/images/skills/雷爆.png',
+    },
+    {
+      name: '神火',
+      command: null,
+      effect: (monster: Monster) => {
+        monster.currentHp = Math.max(0, monster.currentHp - 1)
+      },
+      image: '/images/skills/神火.png',
+      interval: 7,
+    },
+  ]
 
   // 計算當前怪物血量百分比
   const hpPercentage = computed(() => {
@@ -133,48 +242,137 @@ export const useMonsterStore = defineStore('monster', () => {
     return result
   }
 
+  // 初始化被動技能
+  function initializePassiveSkills() {
+    Object.keys(passiveSkillIntervals.value).forEach((key) => {
+      clearInterval(passiveSkillIntervals.value[key])
+    })
+    passiveSkillIntervals.value = {}
+    skills.value.forEach((skill) => {
+      const config = skillConfigs.find(sc => sc.name === skill.name)
+      if (config && config.interval) {
+        passiveSkillIntervals.value[skill.name] = window.setInterval(() => {
+          if (currentMonster.value && !showTreasure.value) {
+            console.warn(`被動技能 ${skill.name} 觸發`)
+            config.effect(currentMonster.value as Monster)
+            activeSkillImage.value = { name: skill.name, image: config.image }
+            setTimeout(() => {
+              if (activeSkillImage.value?.name === skill.name) {
+                activeSkillImage.value = null
+              }
+            }, 200)
+            checkMonsterDeath()
+          }
+        }, config.interval * 1000)
+      }
+    })
+  }
+
+  // 檢查怪物死亡
+  function checkMonsterDeath() {
+    if (currentMonster.value && currentMonster.value.currentHp <= 0) {
+      lastDefeatedMonsterRarity.value = currentMonster.value.rarity
+      currentMonster.value = null
+      showTreasure.value = true
+      clearWeakness()
+      Object.keys(passiveSkillIntervals.value).forEach((key) => {
+        clearInterval(passiveSkillIntervals.value[key])
+      })
+      passiveSkillIntervals.value = {}
+      Object.keys(skillSequenceTimeouts.value).forEach((key) => {
+        clearTimeout(skillSequenceTimeouts.value[key])
+      })
+      skillSequenceTimeouts.value = {}
+    }
+  }
+
   // 處理按鍵輸入
   function handleKeyPress(key: string) {
-    if (!isWeaknessActive.value || !currentMonster.value) {
-      console.warn('破綻事件未啟動或怪物不存在，忽略按鍵輸入')
+    if (!currentMonster.value || showTreasure.value) {
+      console.warn('無怪物或顯示寶箱，忽略按鍵輸入')
       keySequence.value = []
       return
     }
-    const inputKey = key.replace('Key', '').toLowerCase()
-    console.warn('----------------------------------------')
-    console.warn('按下按鍵:', inputKey)
-    console.warn('當前破綻狀態:', {
-      是否啟動: isWeaknessActive.value,
-      目標按鍵序列: [...weaknessKeys.value],
-      當前按鍵序列: [...keySequence.value],
-      計時器: weaknessTimer.value,
-    })
-    if (keySequence.value.length >= 3) {
-      keySequence.value.shift()
+    // 標準化按鍵輸入
+    let inputKey = key.toLowerCase()
+    if (inputKey.startsWith('key')) {
+      inputKey = inputKey.replace('key', '')
     }
-    keySequence.value.push(inputKey)
-    console.warn('按鍵序列更新:', [...keySequence.value])
     console.warn('----------------------------------------')
-    if (keySequence.value.length === 3) {
-      const isMatch = keySequence.value.every((key: string, index: number) => key === weaknessKeys.value[index])
-      console.warn('按鍵比對結果:', {
-        實際按鍵: [...keySequence.value],
-        目標按鍵: [...weaknessKeys.value],
-        是否匹配: isMatch,
+    console.warn('按下按鍵:', inputKey, '原始按鍵:', key)
+
+    // 處理破綻按鍵
+    if (isWeaknessActive.value) {
+      console.warn('當前破綻狀態:', {
+        是否啟動: isWeaknessActive.value,
+        目標按鍵序列: [...weaknessKeys.value],
+        當前按鍵序列: [...keySequence.value],
+        計時器: weaknessTimer.value,
       })
-      if (isMatch) {
-        console.warn('成功完成按鍵序列！觸發會心一擊！')
-        const damage = Math.floor(currentMonster.value.maxHp * 0.05)
-        currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - damage)
-        if (currentMonster.value.currentHp === 0) {
-          lastDefeatedMonsterRarity.value = currentMonster.value.rarity
-          currentMonster.value = null
-          showTreasure.value = true
+      if (keySequence.value.length >= 3) {
+        keySequence.value.shift()
+      }
+      keySequence.value.push(inputKey)
+      console.warn('按鍵序列更新:', [...keySequence.value])
+      if (keySequence.value.length === 3) {
+        const isMatch = keySequence.value.every((key: string, index: number) => key === weaknessKeys.value[index])
+        console.warn('按鍵比對結果:', {
+          實際按鍵: [...keySequence.value],
+          目標按鍵: [...weaknessKeys.value],
+          是否匹配: isMatch,
+        })
+        if (isMatch) {
+          console.warn('成功完成按鍵序列！觸發會心一擊！')
+          const damage = Math.floor(currentMonster.value.maxHp * 0.05)
+          currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - damage)
+          checkMonsterDeath()
           clearWeakness()
         }
-        clearWeakness()
       }
     }
+
+    // 處理技能按鍵
+    skills.value.forEach((skill) => {
+      const config = skillConfigs.find(sc => sc.name === skill.name && sc.command)
+      if (config && config.command) {
+        if (!skillKeySequences.value[skill.name]) {
+          skillKeySequences.value[skill.name] = []
+        }
+        const sequence = skillKeySequences.value[skill.name]
+        if (sequence.length >= config.command.length) {
+          sequence.shift()
+        }
+        sequence.push(inputKey)
+        console.warn(`技能 ${skill.name} 按鍵序列更新:`, [...sequence], '目標序列:', config.command)
+
+        // 清除現有超時
+        if (skillSequenceTimeouts.value[skill.name]) {
+          clearTimeout(skillSequenceTimeouts.value[skill.name])
+        }
+
+        // 檢查序列是否匹配
+        if (sequence.length === config.command.length && sequence.every((k, i) => k === config.command![i])) {
+          console.warn(`技能 ${skill.name} 觸發！`)
+          config.effect(currentMonster.value as Monster)
+          activeSkillImage.value = { name: skill.name, image: config.image }
+          setTimeout(() => {
+            if (activeSkillImage.value?.name === skill.name) {
+              activeSkillImage.value = null
+            }
+          }, 200)
+          skillKeySequences.value[skill.name] = []
+          checkMonsterDeath()
+        } else {
+          // 設置超時以重置不正確序列
+          skillSequenceTimeouts.value[skill.name] = window.setTimeout(() => {
+            console.warn(`技能 ${skill.name} 序列超時，重置`)
+            skillKeySequences.value[skill.name] = []
+          }, 2000)
+        }
+      }
+    })
+
+    console.warn('----------------------------------------')
   }
 
   // 減少怪物血量
@@ -182,12 +380,7 @@ export const useMonsterStore = defineStore('monster', () => {
     if (!currentMonster.value || showTreasure.value) return
     currentMonster.value.currentHp = Math.max(0, currentMonster.value.currentHp - 1)
     checkWeakness()
-    if (currentMonster.value.currentHp === 0) {
-      lastDefeatedMonsterRarity.value = currentMonster.value.rarity
-      currentMonster.value = null
-      showTreasure.value = true
-      clearWeakness()
-    }
+    checkMonsterDeath()
   }
 
   // 生成五位數字 ID
@@ -271,6 +464,7 @@ export const useMonsterStore = defineStore('monster', () => {
       // 新增技能
       skill = { name: skillName, level: 1, exp: 0 }
       skills.value.push(skill)
+      initializePassiveSkills() // 初始化被動技能
     }
 
     // 增加經驗值
@@ -283,6 +477,7 @@ export const useMonsterStore = defineStore('monster', () => {
       skill.level += 1
       skill.exp = 0
       console.warn(`技能 ${skillName} 升級至 Lv.${skill.level}`)
+      initializePassiveSkills() // 重新初始化被動技能
     }
 
     return true
@@ -387,7 +582,7 @@ export const useMonsterStore = defineStore('monster', () => {
         { chance: 2, name: '技能書: 毒沼' },
         { chance: 1, name: '技能書: 雷爆' },
         { chance: 1, name: '技能書: 三叉戟之舞' },
-        { chance: 1, name: '技能書: 力量光環' },
+        { chance: 1, name: '技能書: 神火' },
       ]
       let skillCumulative = 0
       for (const skill of skillBooks) {
@@ -461,6 +656,7 @@ export const useMonsterStore = defineStore('monster', () => {
       image,
     }
     console.warn('New monster generated:', currentMonster.value)
+    initializePassiveSkills()
   }
 
   // 開啟寶箱，獲得物品
@@ -504,6 +700,8 @@ export const useMonsterStore = defineStore('monster', () => {
     isWeaknessActive,
     weaknessKeys,
     weaknessTimer,
+    activeSkillImage,
+    skillConfigs,
     generateMonster,
     decreaseMonsterHp,
     openTreasure,

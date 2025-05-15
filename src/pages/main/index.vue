@@ -23,6 +23,7 @@ const showDefaultAttackImage = ref(false)
 const isProcessing = ref(false)
 const showTreasurePrompt = ref(false)
 const selectedItemId = ref<string | null>(null)
+const hoveredSkill = ref<string | null>(null)
 
 onMounted(() => {
   console.warn('Generated monster image:', monsterStore.currentMonster?.image)
@@ -53,20 +54,12 @@ watch(pressedMouses, (newValue) => {
   handleMouseDown(newValue)
 })
 
-const handleDebounceWeaknessKey = useDebounceFn((key: string) => {
-  if (monsterStore.isWeaknessActive && monsterStore.weaknessTimer > 0) {
-    console.warn('處理破綻按鍵:', key)
-    monsterStore.handleKeyPress(key)
-  }
-}, 50)
-
 watch(pressedKeys, (newValue) => {
   try {
     if (newValue.length > 0 && !monsterStore.showTreasure && !isProcessing.value) {
-      if (monsterStore.isWeaknessActive && monsterStore.weaknessTimer > 0) {
-        const lastKey = newValue[newValue.length - 1]
-        handleDebounceWeaknessKey(lastKey)
-      }
+      const lastKey = newValue[newValue.length - 1]
+      console.warn('Raw key input:', lastKey)
+      monsterStore.handleKeyPress(lastKey)
       monsterStore.decreaseMonsterHp()
       showDefaultAttackImage.value = true
       setTimeout(() => {
@@ -78,7 +71,7 @@ watch(pressedKeys, (newValue) => {
     showDefaultAttackImage.value = false
   }
   handleKeyDown(newValue)
-}, { deep: true }) // 全域監控
+}, { deep: true })
 
 watch(isProcessing, (newValue) => {
   if (newValue) {
@@ -181,6 +174,17 @@ function handleUseSkillBook(itemId: string) {
 function handleClickOutside() {
   selectedItemId.value = null
 }
+
+function getSkillTooltip(skillName: string): string {
+  const config = monsterStore.skillConfigs.find(sc => sc.name === skillName)
+  if (!config) return ''
+  if (config.command) {
+    const damage = config.name === '火雨' || config.name === '雷爆' ? 4 : config.name === '風刃' || config.name === '三叉戟之舞' ? 2 : 1
+    return `指令: <span class="font-bold text-yellow-400">${config.command.join(' ')}</span>  效果: 額外 <span class="font-bold text-red-500">${damage}點傷害</span>`
+  } else {
+    return `指令: 無需輸入指令，持續觸發  效果: 每${config.interval}秒造成 <span class="font-bold text-red-500">1點傷害</span>`
+  }
+}
 </script>
 
 <template>
@@ -223,6 +227,17 @@ function handleClickOutside() {
             alt="Default Attack"
             class="absolute z-10 h-16 w-16 object-contain"
             src="/images/defaultAttack.png"
+            :style="{
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }"
+          >
+          <img
+            v-if="monsterStore.activeSkillImage"
+            :alt="monsterStore.activeSkillImage.name"
+            class="absolute z-10 h-16 w-16 object-contain"
+            :src="monsterStore.activeSkillImage.image"
             :style="{
               top: '50%',
               left: '50%',
@@ -429,7 +444,7 @@ function handleClickOutside() {
 
     <div
       v-if="showSkills"
-      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
+      class="pointer-events-auto fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
       <div class="mb-4 flex items-center justify-between">
@@ -464,11 +479,18 @@ function handleClickOutside() {
       <div
         v-for="skill in monsterStore.skills"
         :key="skill.name"
-        class="relative mb-1 w-full flex items-center rounded-md bg-gray-900 p-2 text-sm text-white"
+        class="pointer-events-auto relative mb-1 w-full flex items-center rounded-md bg-gray-900 p-2 text-sm text-white"
+        @mouseenter="console.warn('Hover skill:', skill.name); hoveredSkill = skill.name"
+        @mouseleave="console.warn('Leave skill:', skill.name); hoveredSkill = null"
       >
         <span class="ml-1 text-sm">
           {{ skill.name }} Lv.{{ skill.level }}, Exp: {{ skill.level >= 9 ? 'Max' : skill.exp }}
         </span>
+        <div
+          v-if="hoveredSkill === skill.name"
+          class="pointer-events-none absolute right-full z-[10000] mr-2 w-64 rounded-md bg-gray-800 bg-opacity-90 p-2 text-sm text-white shadow-lg"
+          v-html="getSkillTooltip(skill.name)"
+        />
       </div>
     </div>
   </div>
