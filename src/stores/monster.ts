@@ -228,7 +228,7 @@ export const useMonsterStore = defineStore('monster', () => {
     })
   }
 
-  // 生成隨機按鍵
+  // 生成隨機按鍵給破綻事件
   function generateRandomKeys(): string[] {
     const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
     const result: string[] = []
@@ -490,30 +490,30 @@ export const useMonsterStore = defineStore('monster', () => {
 
     const dropTables: Record<MonsterRarity, Array<{ chance: number, type: string, rarity: ItemRarity }>> = {
       common: [
-        { chance: 1, type: 'material', rarity: 'common' },
-        { chance: 1, type: 'equipment', rarity: 'common' },
-        { chance: 98, type: 'skillBook', rarity: 'rare' },
+        { chance: 50, type: 'material', rarity: 'common' },
+        { chance: 30, type: 'equipment', rarity: 'common' },
+        { chance: 20, type: 'skillBook', rarity: 'rare' },
       ],
       magic: [
-        { chance: 73, type: 'material', rarity: 'magic' },
-        { chance: 15, type: 'equipment', rarity: 'common' },
-        { chance: 10, type: 'equipment', rarity: 'magic' },
-        { chance: 2, type: 'skillBook', rarity: 'rare' },
+        { chance: 40, type: 'material', rarity: 'magic' },
+        { chance: 20, type: 'equipment', rarity: 'common' },
+        { chance: 20, type: 'equipment', rarity: 'magic' },
+        { chance: 20, type: 'skillBook', rarity: 'rare' },
       ],
       rare: [
-        { chance: 60, type: 'material', rarity: 'rare' },
+        { chance: 30, type: 'material', rarity: 'rare' },
         { chance: 10, type: 'equipment', rarity: 'common' },
         { chance: 15, type: 'equipment', rarity: 'magic' },
-        { chance: 10, type: 'equipment', rarity: 'rare' },
-        { chance: 3, type: 'skillBook', rarity: 'rare' },
+        { chance: 20, type: 'equipment', rarity: 'rare' },
+        { chance: 23, type: 'skillBook', rarity: 'rare' },
         { chance: 1, type: 'ultimateBook', rarity: 'exalted' },
         { chance: 1, type: 'mysteriousCollectible', rarity: 'rare' },
       ],
       exalted: [
-        { chance: 53, type: 'material', rarity: 'exalted' },
-        { chance: 10, type: 'equipment', rarity: 'magic' },
-        { chance: 15, type: 'equipment', rarity: 'rare' },
-        { chance: 10, type: 'equipment', rarity: 'exalted' },
+        { chance: 20, type: 'material', rarity: 'exalted' },
+        { chance: 20, type: 'equipment', rarity: 'magic' },
+        { chance: 30, type: 'equipment', rarity: 'rare' },
+        { chance: 18, type: 'equipment', rarity: 'exalted' },
         { chance: 5, type: 'skillBook', rarity: 'rare' },
         { chance: 2, type: 'ultimateBook', rarity: 'exalted' },
         { chance: 4, type: 'mysteriousCollectible', rarity: 'rare' },

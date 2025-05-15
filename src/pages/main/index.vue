@@ -180,7 +180,7 @@ function getSkillTooltip(skillName: string): string {
   if (!config) return ''
   if (config.command) {
     const damage = config.name === '火雨' || config.name === '雷爆' ? 4 : config.name === '風刃' || config.name === '三叉戟之舞' ? 2 : 1
-    return `指令: <span class="font-bold text-yellow-400">${config.command.join(' ')}</span>  效果: 額外 <span class="font-bold text-red-500">${damage}點傷害</span>`
+    return `指令: <span class="font-bold text-yellow-400">${config.command.join('')}</span><br>效果: 額外 <span class="font-bold text-red-500">${damage}</span> 點傷害`
   } else {
     return `指令: 無需輸入指令，持續觸發  效果: 每${config.interval}秒造成 <span class="font-bold text-red-500">1點傷害</span>`
   }
@@ -343,7 +343,7 @@ function getSkillTooltip(skillName: string): string {
 
     <div
       v-if="showInventory"
-      class="fixed left-1/2 top-2 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
+      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
       <div class="mb-2 flex items-center justify-between">
@@ -411,7 +411,7 @@ function getSkillTooltip(skillName: string): string {
 
     <div
       v-if="showEquipment"
-      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] max-w-md overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
+      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
       <div class="mb-4 flex items-center justify-between">
@@ -444,7 +444,7 @@ function getSkillTooltip(skillName: string): string {
 
     <div
       v-if="showSkills"
-      class="pointer-events-auto fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
+      class="pointer-events-auto fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
       <div class="mb-4 flex items-center justify-between">
@@ -488,7 +488,7 @@ function getSkillTooltip(skillName: string): string {
         </span>
         <div
           v-if="hoveredSkill === skill.name"
-          class="pointer-events-none absolute right-full z-[10000] mr-2 w-64 rounded-md bg-gray-800 bg-opacity-90 p-2 text-sm text-white shadow-lg"
+          class="pointer-events-none absolute z-10000 mr-2 w-36 translate-x-16 rounded-md bg-gray-800 bg-opacity-90 px-2 py-0.5 text-sm text-white shadow-lg"
           v-html="getSkillTooltip(skill.name)"
         />
       </div>
