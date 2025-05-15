@@ -377,11 +377,17 @@ export const useMonsterStore = defineStore('monster', () => {
     } else if (selectedType === 'skillBook') {
       const skillRoll = Math.random() * 100
       const skillBooks = [
-        { chance: 30, name: '技能書: 刺拳' },
+        { chance: 20, name: '技能書: 刺拳' },
         { chance: 20, name: '技能書: 電球' },
-        { chance: 10, name: '技能書: 後旋踢' },
         { chance: 20, name: '技能書: 冰刺' },
-        { chance: 20, name: '技能書: 火雨' },
+        { chance: 10, name: '技能書: 後旋踢' },
+        { chance: 10, name: '技能書: 岩彈' },
+        { chance: 10, name: '技能書: 火雨' },
+        { chance: 5, name: '技能書: 風刃' },
+        { chance: 2, name: '技能書: 毒沼' },
+        { chance: 1, name: '技能書: 雷爆' },
+        { chance: 1, name: '技能書: 三叉戟之舞' },
+        { chance: 1, name: '技能書: 力量光環' },
       ]
       let skillCumulative = 0
       for (const skill of skillBooks) {

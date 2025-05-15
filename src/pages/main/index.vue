@@ -78,7 +78,7 @@ watch(pressedKeys, (newValue) => {
     showDefaultAttackImage.value = false
   }
   handleKeyDown(newValue)
-}, { deep: false })
+}, { deep: true }) // 全域監控
 
 watch(isProcessing, (newValue) => {
   if (newValue) {
@@ -188,14 +188,19 @@ function handleClickOutside() {
     class="relative children:(absolute h-screen w-screen)"
     :class="[catStore.mirrorMode ? '-scale-x-100' : 'scale-x-100']"
     :style="{ opacity: catStore.opacity / 100 }"
+    tabindex="0"
     @click="handleClickOutside"
     @mousedown="handleWindowDrag"
   >
-    <img :src="`/images/backgrounds/${catStore.mode}.png`">
+    <img
+      :src="`/images/backgrounds/${catStore.mode}.png`"
+      tabindex="0"
+    >
 
     <div
       v-if="monsterStore.currentMonster || monsterStore.showTreasure"
       class="absolute min-h-screen flex flex-col items-center justify-center overflow-visible"
+      tabindex="0"
     >
       <div class="flex flex-col items-center">
         <div class="relative">
