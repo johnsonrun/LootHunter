@@ -247,7 +247,7 @@ function handleClickOutside() {
 
           <div class="absolute right-0 top--8">
             <button
-              class="rounded-md bg-gray-800 px-1 py-1 text-white shadow-lg hover:bg-gray-700"
+              class="mt-1 rounded-md border-none bg-gray-800 px-1 text-sm text-white shadow-lg hover:bg-gray-700"
               @mousedown.stop.prevent="toggleMenu"
             >
               選單
@@ -255,26 +255,26 @@ function handleClickOutside() {
 
             <div
               v-if="showMenu"
-              class="absolute bottom-full right-0 mt-2 w-17 rounded-md bg-gray-800 bg-opacity-90 p-1 shadow-lg"
+              class="absolute bottom-full right-0 mt-2 w-12 rounded-md bg-gray-800 bg-opacity-90 p-1 shadow-lg"
               @mousedown.stop.prevent
             >
               <button
-                class="mb-1 w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                class="mb-1 w-full rounded-md border-none bg-gray-700 text-left text-sm text-white hover:bg-gray-600"
                 @mousedown.stop.prevent="openInventory"
               >
-                物品欄
+                背包
               </button>
               <button
-                class="mb-1 w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                class="mb-1 w-full rounded-md border-none bg-gray-700 text-left text-sm text-white hover:bg-gray-600"
                 @mousedown.stop.prevent="openEquipment"
               >
-                裝備欄
+                裝備
               </button>
               <button
-                class="w-full rounded-md bg-gray-700 px-1 py-1 text-left text-white hover:bg-gray-600"
+                class="w-full rounded-md border-none bg-gray-700 text-left text-sm text-white hover:bg-gray-600"
                 @mousedown.stop.prevent="openSkills"
               >
-                技能欄
+                技能
               </button>
             </div>
           </div>
@@ -323,15 +323,15 @@ function handleClickOutside() {
 
     <div
       v-if="showInventory"
-      class="fixed left-1/2 top-4 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
+      class="fixed left-1/2 top-2 z-[9999] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-md bg-gray-800 bg-opacity-90 p-4 shadow-lg !w-64 -translate-x-1/2"
       @mousedown.stop.prevent
     >
-      <div class="mb-4 flex items-center justify-between">
+      <div class="mb-2 flex items-center justify-between">
         <h3 class="text-lg text-white font-bold">
-          物品欄
+          背包
         </h3>
         <button
-          class="bg-gray-700 p-0.5 text-white hover:bg-gray-600"
+          class="group mt-[-12px] inline-flex items-center justify-center rounded border-none bg-gray-800 px-1 py-0.5 text-white transition-colors hover:rounded-sm hover:bg-gray-600"
           @click.stop="closePanel"
         >
           <svg
@@ -377,11 +377,10 @@ function handleClickOutside() {
         </div>
         <div
           v-if="selectedItemId === item.id && item.name.includes('技能書')"
-
           @click.stop
         >
           <button
-            class="absolute right-1 top-1 z-15 rounded-md bg-gray-600 text-white hover:bg-gray-500"
+            class="absolute right-2 top-1.5 z-15 rounded-md border-none bg-gray-600 px-1 text-sm text-white hover:bg-gray-500"
             @click.stop="handleUseSkillBook(item.id)"
           >
             使用
@@ -397,10 +396,10 @@ function handleClickOutside() {
     >
       <div class="mb-4 flex items-center justify-between">
         <h3 class="text-lg text-white font-bold">
-          裝備欄
+          裝備
         </h3>
         <button
-          class="p-1 text-white hover:bg-gray-300"
+          class="group mt-[-12px] inline-flex items-center justify-center rounded border-none bg-gray-800 px-1 py-0.5 text-white transition-colors hover:rounded-sm hover:bg-gray-600"
           @click.stop="closePanel"
         >
           <svg
@@ -430,10 +429,10 @@ function handleClickOutside() {
     >
       <div class="mb-4 flex items-center justify-between">
         <h3 class="text-lg text-white font-bold">
-          技能欄
+          技能
         </h3>
         <button
-          class="rounded-full bg-gray-700 p-1 text-white hover:bg-gray-600"
+          class="group mt-[-12px] inline-flex items-center justify-center rounded border-none bg-gray-800 px-1 py-0.5 text-white transition-colors hover:rounded-sm hover:bg-gray-600"
           @click.stop="closePanel"
         >
           <svg
@@ -460,9 +459,11 @@ function handleClickOutside() {
       <div
         v-for="skill in monsterStore.skills"
         :key="skill.name"
-        class="mb-1 w-full rounded-md bg-gray-700 p-2 text-white"
+        class="relative mb-1 w-full flex items-center rounded-md bg-gray-900 p-2 text-sm text-white"
       >
-        {{ skill.name }} Lv.{{ skill.level }}, Exp: {{ skill.level >= 9 ? 'Max' : skill.exp }}
+        <span class="ml-1 text-sm">
+          {{ skill.name }} Lv.{{ skill.level }}, Exp: {{ skill.level >= 9 ? 'Max' : skill.exp }}
+        </span>
       </div>
     </div>
   </div>
